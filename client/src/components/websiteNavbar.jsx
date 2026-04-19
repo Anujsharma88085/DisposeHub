@@ -1,4 +1,3 @@
-// components/Navbar.jsx
 import React from 'react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -36,38 +35,36 @@ const Navbar = ({role}) => {
         >
             Dashboard
         </Link>
-        </div>
+      </div>
         
-      <div>
-         <div className="flex items-center gap-6">
-                {/* Notification Bell */}
-                <div className="relative cursor-pointer bell-icon" onClick={toggleNotificationBell}>
-                  <FaBell className="text-2xl text-red-400 hover:text-red-600 transform transition duration-200 hover:scale-110" />
-                  {data > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">
-                      {data}
-                    </span>
-                  )}
-                  {isBellOpen && <NotificationDropdown sendData={handleDataFromChild} />}
-                </div>
+      <div className="flex items-center gap-6">
+        {/* Notification Bell */}
+        <div className="relative cursor-pointer bell-icon" onClick={toggleNotificationBell}>
+          <FaBell className="text-2xl text-red-400 hover:text-red-600 transform transition duration-200 hover:scale-110" />
+          {data > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+              {data}
+            </span>
+          )}
+          {isBellOpen && <NotificationDropdown sendData={handleDataFromChild} />}
         </div>
-      <Button
-        variant="contained"
-        onClick={handleLogout}
-        sx={{
-            textTransform: "none",
-            borderRadius: "999px",
-            bgcolor: "#e53935", // red shade
-            color: "#ffffff", // white text
-            fontWeight: "bold",
-            "&:hover": {
-            bgcolor: "#d32f2f", // darker red on hover
-            },
-        }}
-        >
-        Logout
-        </Button>
 
+        <Button
+          variant="contained"
+          onClick={handleLogout}
+          sx={{
+              textTransform: "none",
+              borderRadius: "999px",
+              bgcolor: "#e53935",
+              color: "#ffffff",
+              fontWeight: "bold",
+              "&:hover": {
+              bgcolor: "#d32f2f",
+              },
+          }}
+          >
+          Logout
+        </Button>
       </div>
     </nav>
   );
