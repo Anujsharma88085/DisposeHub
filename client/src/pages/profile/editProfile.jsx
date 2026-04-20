@@ -2,13 +2,18 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
 import {uploadProfilePicture, updateUserProfile } from "../../apis/userApi";
+import { useDispatch } from "react-redux";
+import { updateUser } from "../../redux/authSlice";
 
 export default function EditUserProfile() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const dispatch = useDispatch();
+
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+
   const [user, setUser] = useState({
     name: location.state?.user?.name || "",
     email: location.state?.user?.email || "",
@@ -48,7 +53,9 @@ export default function EditUserProfile() {
   const handleSave = async () => {
     setLoading(true);
     try {
-      await updateUserProfile(editedUser);
+      const updatedData = await updateUserProfile(editedUser);
+      
+      dispatch(updateUser(updatedData.user || editedUser));
       setTimeout(() => navigate("/profile"), 1000);
     } catch (error) {
       console.log("Error:", error.message);
