@@ -1,22 +1,40 @@
 import React from 'react';
+import { useDispatch } from "react-redux";
+import { logout } from "../redux/authSlice";
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@mui/material';
 import { FaBell } from "react-icons/fa";
 import NotificationDropdown from "./Notification";
 import { logoutUser } from '../apis/authApi';
+
+
 const Navbar = ({role}) => {
   const navigate = useNavigate();
   const [isBellOpen, setIsBellOpen] = useState(false);
   const [data, setData] = useState(0);
   const toggleNotificationBell = () => setIsBellOpen(!isBellOpen);
-  const handleLogout = () => {
-    logoutUser();
-    navigate('/login');
+  const dispatch = useDispatch();
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+
+      dispatch(logout());
+
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+
+      dispatch(logout());
+      navigate("/login");
+    }
   };
+
   const handleDataFromChild = (childData) => {
     setData(childData);
   };
+
   return (
     <nav className="bg-gray-900 text-white px-8 py-4 shadow-md flex justify-between items-center">
       <div className="text-2xl font-bold tracking-wide">

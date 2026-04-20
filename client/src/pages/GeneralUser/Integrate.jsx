@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useDispatch } from "react-redux";
+import { logout } from "../../redux/authSlice";
 import { useNavigate } from 'react-router-dom';
 import LeafletMap from '../../components/LeafletMap';
 import { logoutUser } from '../../apis/authApi';
@@ -84,6 +86,23 @@ function Integrate({ garbageDumps }) {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const navigate = useNavigate();
 
+  const dispatch = useDispatch();
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+
+      dispatch(logout());
+
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+
+      dispatch(logout());
+      navigate("/login");
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -130,10 +149,7 @@ function Integrate({ garbageDumps }) {
         <Box sx={{ mt: 'auto' }}>
           <SidebarButton
             color="error"
-            onClick={() => {
-              logoutUser();
-              navigate('/login');
-            }}
+            onClick={handleLogout}
           >
             Logout
           </SidebarButton>
