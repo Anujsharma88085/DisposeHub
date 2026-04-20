@@ -119,26 +119,6 @@ function Integrate({ garbageDumps }) {
           DisposeHub
         </SidebarTitle>
 
-        <TextField
-          placeholder="Search location..."
-          size="small"
-          variant="outlined"
-          fullWidth
-          sx={{
-            mb: 3,
-            input: { color: '#fff' },
-            '& .MuiOutlinedInput-root': {
-              borderRadius: '12px',
-              '& fieldset': {
-                borderColor: 'rgba(255,255,255,0.3)',
-              },
-              '&:hover fieldset': {
-                borderColor: '#fff',
-              },
-            },
-          }}
-        />
-
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           <SidebarButton onClick={() => navigate('/')}>Home</SidebarButton>
           <SidebarButton onClick={() => navigate('/dashboard')}>Dashboard</SidebarButton>

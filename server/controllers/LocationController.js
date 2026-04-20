@@ -6,6 +6,20 @@ import Notification from "../models/notificationModel.js";
 import Transaction from "../models/transactionModel.js";
 
 
+export const getMyActiveLocation = catchAsync(async (req, res, next) => {
+  const userId = req.user._id;
+  const location = await Location.findOne({ markedBy: userId, active: true });
+  
+  if (!location) {
+    return next(new AppError("No active location found", 404));
+  }
+  
+  res.status(200).json({
+    success: true,
+    location,
+  });
+});
+
 export const saveLocation = catchAsync(async (req, res, next) => {
   const userId = req.user._id;
   const { lat, lng, locationName, active } = req.body;
@@ -71,8 +85,8 @@ export const deactivateLocation = catchAsync(async (req, res, next) => {
   const USER_POINT_REWARD = Number(process.env.USER_POINT_REWARD) || 10;
   const USER_WALLET_REWARD = Number(process.env.USER_WALLET_REWARD) || 5;
 
-  const DRIVER_POINT_REWARD = Number(process.env.DRIVER_POINT_REWARD) || 5;
-  const DRIVER_WALLET_REWARD = Number(process.env.DRIVER_WALLET_REWARD) || 2;
+  const DRIVER_POINT_REWARD = Number(process.env.DRIVER_POINT_REWARD) || 20;
+  const DRIVER_WALLET_REWARD = Number(process.env.DRIVER_WALLET_REWARD) || 10;
 
   // 3. Reward DRIVER
   const driver = await User.findByIdAndUpdate(
