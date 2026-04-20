@@ -19,26 +19,36 @@ const io = new SocketIOServer(server, {
     methods: ["GET", "POST", "PATCH"],
     credentials: true,
   },
+  allowEIO3: true, // For compatibility
 });
 
 /* ================= SOCKET AUTH MIDDLEWARE ================= */
 io.use((socket, next) => {
   try {
     const cookies = socket.handshake.headers.cookie;
-    if (!cookies) return next(new Error("AUTH_REQUIRED"));
+    if (!cookies) {
+      console.log("No cookies found, allowing connection without auth");
+      socket.userId = "anonymous";
+      return next();
+    }
 
     const token = cookie.parse(cookies).jwt;
-    if (!token) return next(new Error("TOKEN_MISSING"));
+    if (!token) {
+      console.log("No JWT token found, allowing connection without auth");
+      socket.userId = "anonymous";
+      return next();
+    }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     socket.userId = decoded.id;
+    console.log("Authenticated user:", socket.userId);
     next();
   } catch (err) {
-    next(new Error("INVALID_TOKEN"));
+    console.log("Auth error:", err.message);
+    socket.userId = "anonymous";
+    next(); // Allow connection even without auth for public features
   }
 });
-
-
 
 /* ================= DATABASE ================= */
 connectDB();

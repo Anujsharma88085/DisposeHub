@@ -34,6 +34,31 @@ export const getActiveLocations = async () => {
   }
 };
 
+export const getUserActiveLocation = async () => {
+  try {
+    const res = await api.get("/location/my-active-location");
+    return res.data.location || null;
+  } catch (error) {
+    if (error.response?.status === 404) {
+      return null; // No active location found
+    }
+    throw new Error(
+      error.response?.data?.message || "Failed to fetch your active location"
+    );
+  }
+};
+
+export const getAllGarbageDumps = async () => {
+  try {
+    const res = await api.get("/garbage/all");
+    return res.data.data || [];
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.message || "Failed to fetch garbage dumps"
+    );
+  }
+};
+
 //  deactivate location
 export const deactivateLocation = async (id) => {
   try {
