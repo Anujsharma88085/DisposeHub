@@ -12,14 +12,11 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const uid = localStorage.getItem("firebaseUID");
-      if (uid) {
-        try {
-          const data = await getMe(uid);
-          setUser(data);
-        } catch (err) {
-          console.error("Error fetching user data", err);
-        }
+      try {
+        const data = await getMe();
+        setUser(data);
+      } catch (err) {
+        console.error("Error fetching user data", err);
       }
     };
     fetchUser();

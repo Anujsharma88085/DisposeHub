@@ -6,13 +6,12 @@ import DeleteIcon from '@mui/icons-material/Delete';
 
 export default function ContactMessages() {
   const [messages, setMessages] = useState([]);
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   const fetchMessages = async () => {
     try {
-      const res = await axios.get('/api/contact/admin/messages', {
-        headers: {
-          'Cache-Control': 'no-cache',
-        },
+      const res = await axios.get(`${BASE_URL}/contact/admin/messages`, {
+       withCredentials: true,
       });
       const raw = res.data;
       const list = Array.isArray(raw) ? raw : raw.messages;
@@ -26,7 +25,7 @@ export default function ContactMessages() {
 
   const deleteMessage = async (id) => {
     try {
-      await axios.delete(`/api/contact/admin/messages/${id}`);
+      await axios.delete(`${BASE_URL}/contact/admin/messages/${id}`);
       setMessages((prev) => prev.filter((msg) => msg._id !== id));
     } catch (err) {
       console.error("Error deleting message", err);
