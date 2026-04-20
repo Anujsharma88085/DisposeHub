@@ -63,8 +63,8 @@ export default function ContactMessages() {
                 key={msg._id}
                 className="border-t border-purple-500 hover:bg-purple-900/20 transition"
               >
-                <td className="py-3 px-4">{msg.name}</td>
-                <td className="py-3 px-4">{msg.email}</td>
+                <td className="py-3 px-4">{msg.user?.name || msg.name}</td>
+                <td className="py-3 px-4">{msg.user?.email || msg.email}</td>
                 <td className="py-3 px-4">{msg.role || "user"}</td>
                 <td className="py-3 px-4">{msg.message}</td>
                 <td className="py-3 px-4 text-center">
