@@ -8,6 +8,7 @@ export default function EditUserProfile() {
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [user, setUser] = useState({
     name: location.state?.user?.name || "",
     email: location.state?.user?.email || "",
@@ -25,24 +26,22 @@ export default function EditUserProfile() {
   const handleUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) {
-      toast.warn("Please select a file to upload.");
+      alert("Please select a file to upload.");
       return;
     }
 
     try {
-      setLoading(true);
+      setUploading(true);
       const data = await uploadProfilePicture(file);
-    //  toast.success("Profile picture uploaded successfully!");
 
       setEditedUser((prev) => ({
         ...prev,
-        profilePicture: data.imageUrl,
+        profilePicture: data.data.profilePicture + "?t=" + new Date().getTime(),
       }));
     } catch (error) {
       console.error("Upload error:", error.message);
-     // toast.error("Error uploading profile picture.");
     } finally {
-      setLoading(false);
+      setUploading(false);
     }
   };
 
@@ -50,10 +49,8 @@ export default function EditUserProfile() {
     setLoading(true);
     try {
       await updateUserProfile(editedUser);
-     // toast.success("Profile updated successfully!");
       setTimeout(() => navigate("/profile"), 1000);
     } catch (error) {
-      //toast.error("Failed to update profile.");
       console.log("Error:", error.message);
     } finally {
       setLoading(false);
@@ -67,12 +64,19 @@ export default function EditUserProfile() {
         {/* Profile Picture Upload */}
         <div className="relative flex flex-col items-center">
           <div className="w-36 h-36 rounded-full overflow-hidden border-4 border-cyan-400 shadow-lg relative group">
-            <img
-              src={editedUser.profilePicture || "/default-avatar.png"}
-              alt="Profile"
-              className="w-full h-full object-cover"
-            />
-
+            {uploading ? (
+              <div className="w-36 h-36 flex items-center justify-center">
+                Uploading...
+              </div>
+            ) : (
+              <img
+                src={editedUser.profilePicture || "/default-avatar.png"}
+                alt="Profile"
+                className="w-full h-full object-cover object-center scale-150"
+              />
+            )}
+            
+          
             {/* Plus Icon Overlay */}
             <label className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer">
               <FaPlus className="text-white text-2xl" />
@@ -89,8 +93,7 @@ export default function EditUserProfile() {
         <h2 className="text-center text-2xl font-bold mt-4 text-cyan-400">
           Edit Profile
         </h2>
-
-        {/* Input Fields */}
+        
         <div className="mt-6 space-y-4">
           <input
             type="text"
@@ -117,11 +120,10 @@ export default function EditUserProfile() {
           )}
         </div>
 
-        {/* Save Button */}
         <button
           onClick={handleSave}
           disabled={loading}
-          className="mt-6 w-full py-3 text-lg bg-cyan-500 text-black font-semibold rounded-lg hover:bg-cyan-600 transition-shadow shadow-md hover:shadow-cyan-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="mt-6 w-full py-3 text-lg bg-cyan-500 text-black font-semibold rounded-lg hover:bg-cyan-600 transition-shadow shadow-md hover:shadow-cyan-500/50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           {loading ? "Saving..." : "💾 Save Profile"}
         </button>

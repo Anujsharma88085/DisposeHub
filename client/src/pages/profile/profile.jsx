@@ -189,7 +189,7 @@ export default function UserProfile() {
             <img
               src={user?.profilePicture || "/cop.jpg"}
               alt="Profile"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-center scale-150"
             />
           </div>
         </div>

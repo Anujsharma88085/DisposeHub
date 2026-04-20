@@ -24,8 +24,7 @@ export const getMe = async () => {
 export const uploadProfilePicture = async (file) => {
     const formData = new FormData();
     formData.append("profileImage", file);
-    const firebaseUID = localStorage.getItem("firebaseUID"); 
-    const response = await fetch(`${API_BASE_URL}/users/upload-profile-photo/${firebaseUID.trim()}`, {
+    const response = await fetch(`${API_BASE_URL}/users/upload-profile-photo`, {
       method: "PUT",
       body: formData,
       credentials: "include",
@@ -39,8 +38,7 @@ export const uploadProfilePicture = async (file) => {
   };
   
   export const updateUserProfile = async (updatedData) => {
-    const firebaseUID = localStorage.getItem("firebaseUID");
-    const response = await fetch(`${API_BASE_URL}/users/update-profile/${firebaseUID.trim()}`, {
+    const response = await fetch(`${API_BASE_URL}/users/update-profile`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updatedData),
