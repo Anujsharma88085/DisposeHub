@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import "leaflet/dist/leaflet.css";
 import "./App.css";
+import { useDispatch } from "react-redux";
+import { loginSuccess } from "./redux/authSlice"; 
 
 // Pages and Components
 import LeafletMap from "./components/LeafletMap";
@@ -37,17 +39,23 @@ function App() {
   const [role, setRole] = useState(null);
   const [name, setName] = useState(null);
 
-  // IMPORTANT: garbageDumps structure
   const [garbageDumps, setGarbageDumps] = useState({ data: [] });
 
-  // 🔐 AUTH + INITIAL FETCH
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+  const dispatch = useDispatch();
+
+  // AUTH + INITIAL FETCH
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const user = await getMe();
+        
         if (user) {
           setRole(user.role);
           setName(user.name);
+
+          dispatch(loginSuccess(user));
         } else {
           setRole(null);
           setName(null);
@@ -60,10 +68,10 @@ function App() {
 
     const fetchGarbageDumps = async () => {
       try {
-        const response = await fetch("http://localhost:3000/api/garbage/all");
+        const response = await fetch(`${API_BASE_URL}/garbage/all`);
         const data = await response.json();
         if (data.success) {
-          setGarbageDumps(data); // { success, data: [...] }
+          setGarbageDumps(data);
         } else {
           console.error("Failed to fetch garbage dumps:", data.message);
         }
@@ -74,7 +82,7 @@ function App() {
 
     fetchUser();
     fetchGarbageDumps();
-  }, []);
+  }, [dispatch]);
 
 
   return (
@@ -88,8 +96,8 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
-        <Route path="/driver" element={<DriverIntegrate role={role} name={name} garbageDumps={garbageDumps} />} />
-        <Route path="/map" element={<Integrate role={role} name={name} garbageDumps={garbageDumps} />} />
+        <Route path="/driver" element={<DriverIntegrate garbageDumps={garbageDumps} />} />
+        <Route path="/map" element={<Integrate garbageDumps={garbageDumps} />} />
         <Route path="/leader-board" element={<Leaderboard />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/editProfile" element={<EditUserProfile />} />

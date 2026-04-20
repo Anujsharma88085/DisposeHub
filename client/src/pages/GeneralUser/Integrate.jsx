@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // ✅ import navigate
+import { useNavigate } from 'react-router-dom';
 import LeafletMap from '../../components/LeafletMap';
+import { logoutUser } from '../../apis/authApi';
 import {
   Box,
   Paper,
@@ -79,7 +80,7 @@ const MapContainer = styled(Paper)(({ theme }) => ({
 /* =======================
    Main Component
 ======================= */
-function Integrate({ role, name, garbageDumps }) {
+function Integrate({ garbageDumps }) {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const navigate = useNavigate();
 
@@ -130,8 +131,8 @@ function Integrate({ role, name, garbageDumps }) {
           <SidebarButton
             color="error"
             onClick={() => {
-              localStorage.clear(); // ✅ clear storage
-              navigate('/login');   // ✅ redirect to login
+              logoutUser();
+              navigate('/login');
             }}
           >
             Logout
@@ -142,7 +143,6 @@ function Integrate({ role, name, garbageDumps }) {
       {/* ===== MAP ===== */}
       <MapContainer elevation={4}>
         <LeafletMap
-          user={{ role, name }}
           selectedLocation={selectedLocation}
           onMapClick={setSelectedLocation}
           garbageDumps={garbageDumps}

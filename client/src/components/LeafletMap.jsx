@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { useSelector } from "react-redux";
 import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -123,10 +124,12 @@ const CurrentLocationButton = () => {
 };
 
 
-const LeafletMap = ({ user, selectedLocation, onMapClick, garbageDumps }) => {
+const LeafletMap = ({ selectedLocation, onMapClick, garbageDumps }) => {
   const [myLocation, setMyLocation] = useState(null);
   const [clickedLocation, setClickedLocation] = useState(null);
   const [pathPositions, setPathPositions] = useState([]);
+
+  const user = useSelector((state) => state.auth.user);
  
   useEffect(() => {
     const updateLocation = () => {

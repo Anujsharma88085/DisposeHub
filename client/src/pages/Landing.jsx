@@ -6,9 +6,7 @@ import locationImage from '../assets/garbage2.jpg';
 import instantResultsImage from '../assets/garbage4.jpg';
 import recyclingInfoImage from '../assets/education.jpg';
 import garbageCollectionImage from '../assets/garbage_van.jpg';
-import { getMe } from '../apis/userApi';
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 

@@ -45,7 +45,7 @@ app.use(express.static(path.join(rootDir, 'public')));
 app.use('/api/v1/users', userRoutes);
 app.use("/api/auth", authRoutes);
 app.use('/api/v1/location/', locationRoutes);
-app.use('/api/garbage', garbageRoutes); 
+app.use('/api/v1/garbage', garbageRoutes); 
 
 app.use('/api/v1/rewards', RewardDistributionRouter);
 app.use('/api/v1/wallet', walletRoutes);
