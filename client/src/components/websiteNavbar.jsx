@@ -39,15 +39,22 @@ const Navbar = ({role}) => {
         
       <div className="flex items-center gap-6">
         {/* Notification Bell */}
-        <div className="relative cursor-pointer bell-icon" onClick={toggleNotificationBell}>
-          <FaBell className="text-2xl text-red-400 hover:text-red-600 transform transition duration-200 hover:scale-110" />
-          {data > 0 && (
-            <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">
-              {data}
-            </span>
-          )}
-          {isBellOpen && <NotificationDropdown sendData={handleDataFromChild} />}
-        </div>
+        {role !== 'admin' && (
+          <div 
+            className="relative cursor-pointer bell-icon" 
+            onClick={toggleNotificationBell}
+          >
+            <FaBell className="text-2xl text-red-400 hover:text-red-600 transform transition duration-200 hover:scale-110" />
+
+            {data > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+                {data}
+              </span>
+            )}
+
+            {isBellOpen && <NotificationDropdown sendData={handleDataFromChild} />}
+          </div>
+        )}
 
         <Button
           variant="contained"
