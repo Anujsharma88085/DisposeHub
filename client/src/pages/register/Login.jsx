@@ -37,6 +37,10 @@ const LoginPage = () => {
 
     setRole(user.role);
 
+    dispatch(
+      loginSuccess(user)
+    );
+
     if (user.role === "admin") {
       navigate("/admin-dashboard");
     } else {

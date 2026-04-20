@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
 import { logout } from "../redux/authSlice";
 import { useState } from 'react';
@@ -9,12 +10,15 @@ import NotificationDropdown from "./Notification";
 import { logoutUser } from '../apis/authApi';
 
 
-const Navbar = ({role}) => {
+const Navbar = () => {
   const navigate = useNavigate();
   const [isBellOpen, setIsBellOpen] = useState(false);
   const [data, setData] = useState(0);
   const toggleNotificationBell = () => setIsBellOpen(!isBellOpen);
   const dispatch = useDispatch();
+
+  const user = useSelector((state) => state.auth.user);
+  const role = user?.role;
 
   const handleLogout = async () => {
     try {
