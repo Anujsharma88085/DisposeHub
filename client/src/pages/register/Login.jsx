@@ -64,15 +64,7 @@ const LoginPage = () => {
       const user = res.data.user;
 
       dispatch(
-        loginSuccess({
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          avatar: user.avatar || "/default-avatar.png",
-          vehicleNumber: user.vehicleNumber || null,
-          points: user.points || 0,
-          walletBalance: user.walletBalance || 0,
-        })
+        loginSuccess(user)
       );
 
       connectSocket();
