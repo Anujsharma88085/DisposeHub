@@ -22,7 +22,6 @@ const DriverIntegrate = ({ driver, garbageDumps }) => {
         timestamp: loc.createdAt
       }));
       setLocations(named);
-      console.log('📦 Fetched active locations:', named.length);
     } catch (err) {
       console.error("Error fetching active locations:", err);
     } finally {
@@ -33,8 +32,7 @@ const DriverIntegrate = ({ driver, garbageDumps }) => {
   useEffect(() => {
     fetchLocations();
     
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchLocations, 30000);
+    const interval = setInterval(fetchLocations, 120000);
     
     return () => clearInterval(interval);
   }, []);
@@ -64,7 +62,7 @@ const DriverIntegrate = ({ driver, garbageDumps }) => {
           locations={locations} 
           setLocations={setLocations}
           garbageDumps={garbageDumps}
-          activePickupLocations={locations}  // Pass locations as activePickupLocations
+          activePickupLocations={locations}
         />
       </div>
     </div>

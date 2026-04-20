@@ -7,6 +7,6 @@ router.use(protect)
 router.post('/save', restrictTo('user'), saveLocation);
 router.get('/my-active-location', restrictTo('user'), getMyActiveLocation);
 router.get('/active-locations', restrictTo('driver'), getActiveLocations);
-router.patch('/:id/deactivate', restrictTo('driver'), deactivateLocation);
+router.patch('/:id/deactivate', restrictTo('user', 'driver'), deactivateLocation);
 
 export default router;

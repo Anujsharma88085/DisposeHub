@@ -3,14 +3,15 @@ import { useSelector } from "react-redux";
 import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import io from 'socket.io-client';
+import { getSocket } from "../socket/socket";
 
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-import { savePickupLocation, getUserActiveLocation } from '../apis/garbageApi';
+import { savePickupLocation, getUserActiveLocation, deactivateLocation } from '../apis/garbageApi';
 
 delete L.Icon.Default.prototype._getIconUrl;
+
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: markerIcon2x,
   iconUrl: markerIcon,
@@ -130,17 +131,14 @@ const CurrentLocationButton = () => {
   return null;
 };
 
-const LeafletMap = ({ user, selectedLocation, onMapClick, garbageDumps }) => {
+const LeafletMap = ({ selectedLocation, onMapClick, garbageDumps }) => {
   const [myLocation, setMyLocation] = useState(null);
   const [clickedLocation, setClickedLocation] = useState(null);
   const [pathPositions, setPathPositions] = useState([]);
-  const [socket, setSocket] = useState(null);
   const [pickupLocations, setPickupLocations] = useState([]);
-  const [driverLocation, setDriverLocation] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('connecting');
   const [isLoadingExisting, setIsLoadingExisting] = useState(true);
   const mapRef = useRef(null);
-  const socketRef = useRef(null);
   const locationWatchIdRef = useRef(null);
 
   const user = useSelector((state) => state.auth.user);
@@ -156,7 +154,6 @@ const LeafletMap = ({ user, selectedLocation, onMapClick, garbageDumps }) => {
       try {
         const userLocation = await getUserActiveLocation();
         if (userLocation && userLocation.active) {
-          console.log('📦 Loaded existing pickup location from backend:', userLocation);
           
           const existingPickup = {
             id: userLocation._id,
@@ -165,11 +162,10 @@ const LeafletMap = ({ user, selectedLocation, onMapClick, garbageDumps }) => {
             long: userLocation.long,
             name: userLocation.locationName,
             locationName: userLocation.locationName,
-            userId: user?.id,
+            userId: user?._id,
             active: true,
             timestamp: userLocation.createdAt || new Date().toISOString()
           };
-          
           setPickupLocations([existingPickup]);
           
           setClickedLocation({
@@ -196,131 +192,43 @@ const LeafletMap = ({ user, selectedLocation, onMapClick, garbageDumps }) => {
     fetchUserActiveLocation();
   }, [user, onMapClick]);
 
-  // Initialize socket connection with real-time updates
+  // socket logic 
   useEffect(() => {
-    const socketUrl = 'http://localhost:3000';
-    const newSocket = io(socketUrl, {
-      withCredentials: true,
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-    });
+    const socket = getSocket();
+    if (!socket) return;
 
-    newSocket.on('connect', () => {
-      console.log('✅ Socket connected successfully');
-      setConnectionStatus('connected');
-      
-      // Send user info to server immediately
-      newSocket.emit('user-connect', {
-        userId: user?.id,
-        role: user?.role
+    const onNewPickup = (location) => {
+      setPickupLocations((prev) => {
+        if (prev.some((l) => l.id === location.id)) return prev;
+        return [location, ...prev];
       });
-      
-      // Request immediate location refresh
-      newSocket.emit('refresh-locations');
-    });
+    };
 
-    newSocket.on('connect_error', (error) => {
-      console.error('❌ Socket connection error:', error);
-      setConnectionStatus('error');
-    });
+    const onPickupCompleted = (data) => {
+      setPickupLocations((prev) =>
+        prev.filter((loc) => loc.id !== data.pickupId)
+      );
 
-    newSocket.on('disconnect', () => {
-      console.log('🔌 Socket disconnected');
-      setConnectionStatus('disconnected');
-    });
+      setClickedLocation(null);
+      setPathPositions([]);
+    };
 
-    // Real-time driver location updates
-    newSocket.on('driver-location-update', (location) => {
-      console.log('📍 Driver location received INSTANTLY:', location);
-      setDriverLocation(location);
-    });
+    const onPickupRemoved = (pickupId) => {
+      setPickupLocations((prev) =>
+        prev.filter((loc) => loc.id !== pickupId)
+      );
+    };
 
-    // Immediate pickup location updates
-    newSocket.on('existing-pickup-locations', (locations) => {
-      console.log('📦 Existing pickup locations:', locations?.length || 0);
-      const otherLocations = (locations || []).filter(loc => loc.userId !== user?.id);
-      const userLocation = pickupLocations.filter(loc => loc.userId === user?.id);
-      setPickupLocations([...userLocation, ...otherLocations]);
-    });
-
-    newSocket.on('new-pickup-location', (location) => {
-      console.log('🆕 New pickup location from another user INSTANTLY:', location);
-      if (location.userId !== user?.id) {
-        setPickupLocations(prev => {
-          if (prev.some(loc => loc.id === location.id)) return prev;
-          return [location, ...prev];
-        });
-      }
-    });
-
-    // INSTANT pickup completion event
-    newSocket.on('pickup-completed', (data) => {
-      console.log('✅ Pickup completed event received INSTANTLY:', data);
-      alert(`🎉 ${data.message || 'Your garbage has been collected!'}`);
-      
-      // Remove the completed pickup from state immediately
-      setPickupLocations(prev => prev.filter(loc => loc.id !== data.pickupId));
-      
-      // Clear clicked location if it was the completed one
-      if (clickedLocation && clickedLocation.id === data.pickupId) {
-        setClickedLocation(null);
-        setPathPositions([]);
-      }
-      
-      // Clear from parent if needed
-      if (onMapClick) {
-        onMapClick(null);
-      }
-    });
-
-    newSocket.on('pickup-location-removed', (pickupId) => {
-      console.log('🗑️ Pickup location removed INSTANTLY:', pickupId);
-      setPickupLocations(prev => prev.filter(loc => loc.id !== pickupId));
-      if (clickedLocation && clickedLocation.id === pickupId) {
-        setClickedLocation(null);
-        setPathPositions([]);
-      }
-    });
-
-    newSocket.on('pickup-cancelled', (data) => {
-      console.log('❌ Pickup cancelled:', data);
-      alert(`ℹ️ ${data.message || 'Pickup request cancelled'}`);
-      setPickupLocations(prev => prev.filter(loc => loc.id !== data.pickupId));
-      if (clickedLocation && clickedLocation.id === data.pickupId) {
-        setClickedLocation(null);
-        setPathPositions([]);
-      }
-    });
-
-    newSocket.on('pickup-confirmed', (pickup) => {
-      console.log('✅ Pickup confirmed by server:', pickup);
-      setPickupLocations(prev => {
-        const filtered = prev.filter(loc => loc.userId !== user?.id);
-        return [...filtered, pickup];
-      });
-    });
-
-    socketRef.current = newSocket;
-    setSocket(newSocket);
+    socket.on("new-pickup-location", onNewPickup);
+    socket.on("pickup-completed", onPickupCompleted);
+    socket.on("pickup-location-removed", onPickupRemoved);
 
     return () => {
-      if (socketRef.current) {
-        socketRef.current.off('connect');
-        socketRef.current.off('connect_error');
-        socketRef.current.off('disconnect');
-        socketRef.current.off('driver-location-update');
-        socketRef.current.off('existing-pickup-locations');
-        socketRef.current.off('new-pickup-location');
-        socketRef.current.off('pickup-completed');
-        socketRef.current.off('pickup-location-removed');
-        socketRef.current.off('pickup-cancelled');
-        socketRef.current.off('pickup-confirmed');
-        socketRef.current.disconnect();
-      }
+      socket.off("new-pickup-location", onNewPickup);
+      socket.off("pickup-completed", onPickupCompleted);
+      socket.off("pickup-location-removed", onPickupRemoved);
     };
-  }, [user?.id, clickedLocation, onMapClick, pickupLocations]);
+  }, [user]);
 
   // Get user's current location using watchPosition (real-time)
   useEffect(() => {
@@ -336,14 +244,14 @@ const LeafletMap = ({ user, selectedLocation, onMapClick, garbageDumps }) => {
             setMyLocation({ lat, lng });
             
             // Send location to socket immediately when changed
-            if (socketRef.current && connectionStatus === 'connected') {
+            if (socket) {
               const locationData = {
                 userId: user?.id,
                 lat: lat,
                 lng: lng,
                 timestamp: new Date().toISOString()
               };
-              socketRef.current.emit('location', locationData);
+              socket.emit('location', locationData);
             }
           },
           (error) => {
@@ -355,8 +263,8 @@ const LeafletMap = ({ user, selectedLocation, onMapClick, garbageDumps }) => {
           },
           {
             enableHighAccuracy: true,
-            timeout: 5000, // Reduced timeout for faster response
-            maximumAge: 0, // Always get fresh location
+            timeout: 5000,
+            maximumAge: 0,
           }
         );
         
@@ -381,19 +289,17 @@ const LeafletMap = ({ user, selectedLocation, onMapClick, garbageDumps }) => {
     }
   }, [selectedLocation]);
 
+  const socket = getSocket();
+
   const cancelPickup = async (pickupId) => {
-    if (socketRef.current && window.confirm('Are you sure you want to cancel this pickup request?')) {
-      // Also deactivate in backend
+    if (socket && window.confirm('Are you sure you want to cancel this pickup request?')) {
       try {
-        await fetch(`http://localhost:3000/api/v1/location/${pickupId}/deactivate`, {
-          method: 'PATCH',
-          credentials: 'include',
-        });
+        await deactivateLocation(pickupId);
       } catch (error) {
         console.error('Failed to deactivate in backend:', error);
       }
       
-      socketRef.current.emit('cancel-pickup', pickupId);
+      socket.emit('cancel-pickup', pickupId);
       setPickupLocations(prev => prev.filter(loc => loc.id !== pickupId));
       if (clickedLocation && clickedLocation.id === pickupId) {
         setClickedLocation(null);
@@ -410,7 +316,7 @@ const LeafletMap = ({ user, selectedLocation, onMapClick, garbageDumps }) => {
     }
 
     // Check if user already has an active pickup
-    const userActivePickup = pickupLocations.find(loc => loc.userId === user?.id && loc.active);
+    const userActivePickup = pickupLocations.find(loc => loc.userId === user?._id && loc.active);
     
     if (userActivePickup) {
       const updateExisting = window.confirm(
@@ -440,27 +346,25 @@ const LeafletMap = ({ user, selectedLocation, onMapClick, garbageDumps }) => {
     );
 
     if (!confirmPickup) return;
-
     const location = { 
       lat, 
       lng, 
       locationName, 
       active: true,
       id: userActivePickup?.id || Date.now(),
-      userId: user?.id
+      userId: user?._id
     };
 
     setClickedLocation(location);
     onMapClick(location);
     
     try {
-      // Save to backend API (this will UPSERT - update if exists, create if not)
       const result = await savePickupLocation(location);
       
       const savedLocation = result.location || result;
-      
+
       // Emit to socket for real-time driver update
-      if (socketRef.current && connectionStatus === 'connected') {
+      if (socket) {
         const pickupData = {
           id: savedLocation._id || location.id,
           lat: location.lat,
@@ -468,18 +372,20 @@ const LeafletMap = ({ user, selectedLocation, onMapClick, garbageDumps }) => {
           long: location.lng,
           name: location.locationName,
           locationName: location.locationName,
-          userId: user?.id,
+          userId: user?._id,
           active: true,
           timestamp: new Date().toISOString()
         };
         
-        socketRef.current.emit('new-pickup-location', pickupData);
+        socket.emit('new-pickup-location', pickupData);
         
         // Update local state - remove old and add new
         setPickupLocations(prev => {
-          const filtered = prev.filter(loc => loc.userId !== user?.id);
-          return [...filtered, pickupData];
+          const filtered = prev.filter(loc => loc.userId !== user?._id);
+          return [...filtered];
         });
+
+        pickupLocations.push(pickupData);
         
         alert(`✅ Pickup location ${userActivePickup ? 'updated' : 'requested'} successfully! A driver will be assigned soon.`);
       } else {
@@ -524,12 +430,6 @@ const LeafletMap = ({ user, selectedLocation, onMapClick, garbageDumps }) => {
     }
   };
 
-  const handleDriverLocationClick = () => {
-    if (driverLocation && mapRef.current) {
-      mapRef.current.setView([driverLocation.lat, driverLocation.lng], 14);
-    }
-  };
-
   if (user?.role !== 'user') {
     return (
       <div className="w-full h-full flex items-center justify-center">
@@ -555,13 +455,6 @@ const LeafletMap = ({ user, selectedLocation, onMapClick, garbageDumps }) => {
 
   return (
     <div className="w-full h-full relative">
-      {connectionStatus !== 'connected' && (
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[1000] bg-yellow-500 text-white px-4 py-2 rounded-lg shadow-lg text-sm">
-          {connectionStatus === 'connecting' ? '🔄 Connecting to real-time server...' : 
-           connectionStatus === 'error' ? '⚠️ Real-time updates offline' :
-           '🔌 Disconnected from real-time server'}
-        </div>
-      )}
       
       <MapContainer
         center={[myLocation.lat, myLocation.lng]}
@@ -606,33 +499,8 @@ const LeafletMap = ({ user, selectedLocation, onMapClick, garbageDumps }) => {
           </Marker>
         )}
 
-        {driverLocation && (
-          <Marker
-            position={[driverLocation.lat, driverLocation.lng]}
-            icon={userIcon('blue')}
-            eventHandlers={{
-              click: handleDriverLocationClick
-            }}
-          >
-            <Popup>
-              <div>
-                <strong className="block mb-1">🚛 Driver Location</strong>
-                <p className="text-xs text-gray-500">
-                  Last updated: {new Date(driverLocation.timestamp).toLocaleTimeString()}
-                </p>
-                <button 
-                  onClick={handleDriverLocationClick}
-                  className="mt-2 px-3 py-1 bg-blue-500 text-white rounded text-xs"
-                >
-                  Center on Driver
-                </button>
-              </div>
-            </Popup>
-          </Marker>
-        )}
-
         {/* Show the user's active pickup (should be only ONE) */}
-        {pickupLocations.filter(loc => loc.userId === user?.id && loc.active).map((location) => (
+        {pickupLocations.filter(loc => loc.userId === user?._id && loc.active).map((location) => (
           <Marker
             key={`my-pickup-${location.id}`}
             position={[location.lat, location.long || location.lng]}

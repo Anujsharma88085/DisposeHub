@@ -6,6 +6,8 @@ export const connectSocket = () => {
   if (!socket) {
     socket = io("http://localhost:3000", {
       withCredentials: true,
+      transports: ["websocket"],
+      reconnection: true,
     });
 
     socket.on("connect", () => {
@@ -16,9 +18,14 @@ export const connectSocket = () => {
       console.error("❌ Socket error:", err.message);
     });
   }
+
+  return socket;
 };
 
-export const getSocket = () => socket;
+export const getSocket = () => {
+  if (!socket) return connectSocket();
+  return socket;
+};
 
 export const disconnectSocket = () => {
   if (socket) {
