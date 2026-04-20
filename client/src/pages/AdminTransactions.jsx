@@ -5,12 +5,14 @@ import { motion } from 'framer-motion';
 export default function AdminTransactions() {
   const [transactions, setTransactions] = useState([]);
 
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
   const fetchTransactions = async () => {
     try {
-      const res = await axios.get('/api/transactions/admin/getAll-transactions', {
-        headers: { 'Cache-Control': 'no-cache' }
+      const res = await axios.get(`${BASE_URL}/transactions/`, {
+        withCredentials: true,
       });
-      setTransactions(res.data.transactions);
+      setTransactions(res.data.data.transactions);
     } catch (err) {
       console.error("Error fetching transactions", err);
     }
@@ -50,9 +52,14 @@ export default function AdminTransactions() {
                 <td className="py-3 px-4">{tx.user?.name || 'N/A'}</td>
                 <td className="py-3 px-4">{tx.user?.email || 'N/A'}</td>
                 <td className="py-3 px-4 capitalize">{tx.type}</td>
-                <td className="py-3 px-4">${tx.amount}</td>
                 <td className="py-3 px-4">
-                  {new Date(tx.date).toLocaleString()}
+                  {tx.amount.toLocaleString("en-IN", {
+                    style: "currency",
+                    currency: "INR",
+                  })}
+                </td>
+                <td className="py-3 px-4">
+                  {new Date(tx.createdAt).toLocaleString()}
                 </td>
               </tr>
             ))}

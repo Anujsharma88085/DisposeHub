@@ -1,11 +1,8 @@
 import User from "../models/userModel.js";
-import bcrypt from "bcrypt";
-import { v2 as cloudinary } from 'cloudinary';
-import multer from 'multer';
+import cloudinary from "../utils/cloudinary.js";
 import fs from 'fs';
-import Email from "../utils/email.js";
-import Notification from "../models/notificationModel.js"
 import { getOne } from './handlerFactory.js';
+import catchAsync from "../utils/catchAsync.js";
 
 
 export const getMe = (req, res, next) => {
@@ -16,15 +13,10 @@ export const getMe = (req, res, next) => {
 
 export const updateUser = async (req, res) => {
   try {
-    const { firebaseUID } = req.params;
-    console.log(firebaseUID+"uid");
+    const userId = req.user.id;
     const { name, vehicleNumber } = req.body;
 
-    if (!firebaseUID) {
-      return res.status(400).json({ success: false, message: "Firebase UID is required" });
-    }
-
-    const user = await User.findOne({ firebaseUID:firebaseUID });
+    const user = await User.findOne({ _id : userId });
 
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
@@ -71,48 +63,41 @@ export const checkUsernameAvailability = async (req, res) => {
   }
 };
 
-const upload = multer({ dest: 'uploads/' }); 
-export const uploadProfilePhoto = async (req, res) => {
-  // Use Multer middleware to handle file upload
+export const uploadProfilePhoto = catchAsync(async (req, res, next) => {
+  const userId = req.user.id;
 
-  const { uid } = req.params;
-  console.log("uid"+uid);
-  upload.single('profileImage')(req, res, async (err) => {
-    if (err) return next(new AppError('Error uploading file', 400));
+  if (!req.file) {
+    return res.status(400).json({
+      success: false,
+      message: "No file uploaded",
+    });
+  }
 
-    if (!req.file) {
-      return next(new AppError('No file uploaded', 400));
-    }
+  const result = await cloudinary.uploader.upload(req.file.path);
 
-    try {
-      // Upload the image to Cloudinary
-      const result = await cloudinary.uploader.upload(req.file.path);
+  fs.unlinkSync(req.file.path);
 
-      // Delete the file from temporary storage after uploading to Cloudinary
-      fs.unlinkSync(req.file.path);
+  const updatedUser = await User.findByIdAndUpdate(
+    userId,
+    { profilePicture: result.secure_url },
+    { new: true, runValidators: true }
+  );
 
-      // Update the user's profile with the Cloudinary URL
-      const updatedUser = await User.findOneAndUpdate(
-        { firebaseUID: uid }, // Use firebaseUID for finding the user
-        { profilePicture: result.secure_url }, // Update the profile picture field
-        { new: true, runValidators: true }
-      );
-      if (!updatedUser) {
-        res.status(404).json({ success: false, message: "user not found" });
-      }
+  if (!updatedUser) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found",
+    });
+  }
 
-      // Respond with success
-      res.status(200).json({
-        status: 'success',
-        message: 'Profile photo uploaded successfully',
-        data: {
-          profilePicture: updatedUser.profilePicture
-        }
-      });
-    } catch (error) {
-      console.log(error);
-      res.status(500).json({ success: false, message: "Error in uploading picture", error: error.message });
-    }
+  res.status(200).json({
+    success: true,
+    message: "Profile photo uploaded successfully",
+    data: {
+      profilePicture: updatedUser.profilePicture,
+    },
   });
-};
+});
+
+
 export const getCurrentUser = getOne(User);

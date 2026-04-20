@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { loginSuccess, logout } from "../../redux/authSlice";
-import { getMe } from "../../apis/userApi";
 import { motion } from "framer-motion";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -12,53 +11,14 @@ import { deepPurple } from "@mui/material/colors";
 
 export default function UserDashboard() {
   const user = useSelector((state) => state.auth.user);
-  const dispatch = useDispatch();
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchUser = async () => {
-      if (user) {
-        setLoading(false);
-        return;
-      }
-      try {
-        const data = await getMe();
-        dispatch(
-          loginSuccess({
-            name: data.name,
-            email: data.email,
-            role: data.role,
-            avatar: data.avatar || "/default-avatar.png",
-            vehicleNumber: data.vehicleNumber || null,
-            points: data.points || 0,
-            walletBalance: data.walletBalance || 0,
-          }),
-        );
-      } catch (err) {
-        console.error("Error fetching user:", err);
-        dispatch(logout());
-        navigate("/login");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUser();
-  }, [dispatch, navigate, user]);
-
-  if (loading) {
-    return (
-      <div
-        className="min-h-screen flex justify-center items-center"
-        style={{ background: "linear-gradient(135deg, #2D0035, #150050)" }}
-      >
-        <CircularProgress sx={{ color: "#fff" }} />
-      </div>
-    );
-  }
-
-  if (!user) return null;
+    if (!user) {
+      navigate("/login");
+    }
+  }, [user]);
 
   const renderUserSections = () => (
     <div className="min-h-screen flex flex-col items-center py-12 px-6">
@@ -71,10 +31,17 @@ export default function UserDashboard() {
           transition={{ duration: 0.5 }}
           className="bg-white/10 backdrop-blur-sm shadow-xl rounded-3xl p-8 flex flex-col items-center justify-center border border-purple-400 hover:shadow-purple-200 h-80"
         >
-          <Avatar
-            src={user.profilePicture || "https://i.pravatar.cc/100"}
-            sx={{ width: 120, height: 120, bgcolor: "#9C27B0", mb: 3 }}
-          />
+
+          <div className="flex flex-col items-center">
+            <div className="w-36 h-36 rounded-full overflow-hidden border-4 border-purple-400 shadow-[0_0_25px_rgba(156,39,176,0.6)]">
+              <img
+                src={user?.profilePicture || "/cop.jpg"}
+                alt="Profile"
+                className="w-full h-full object-cover object-center scale-150"
+              />
+            </div>
+          </div>
+          
           <h2 className="text-3xl font-bold text-white mb-1">{user.name}</h2>
           <p className="text-sm font-semibold bg-purple-700/30 text-white px-4 py-1 rounded-full mt-2 shadow-sm">
             {user.role}
@@ -237,10 +204,16 @@ export default function UserDashboard() {
         transition={{ duration: 0.5 }}
         className="bg-white/10 backdrop-blur-sm shadow-xl rounded-3xl p-8 flex flex-col items-center border border-purple-400 hover:shadow-purple-100 w-full max-w-lg"
       >
-        <Avatar
-          src="https://i.pravatar.cc/100"
-          sx={{ width: 120, height: 120, bgcolor: "#9C27B0", mb: 3 }}
-        />
+        <div className="flex flex-col items-center">
+          <div className="w-36 h-36 rounded-full overflow-hidden border-4 border-purple-400 shadow-[0_0_25px_rgba(156,39,176,0.6)]">
+            <img
+              src={user?.profilePicture || "/cop.jpg"}
+              alt="Profile"
+              className="w-full h-full object-cover object-center scale-150"
+            />
+          </div>
+        </div>
+        
         <h2 className="text-3xl font-bold text-white mb-1">{user.name}</h2>
         <p className="text-sm font-semibold bg-purple-700/30 text-white px-4 py-1 rounded-full mt-2 shadow-sm">
           Driver
@@ -397,6 +370,10 @@ export default function UserDashboard() {
       </div>
     </div>
   );
+
+  if (!user) {
+    return <CircularProgress />;
+  }
 
   return (
     <div

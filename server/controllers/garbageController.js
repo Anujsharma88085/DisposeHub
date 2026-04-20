@@ -3,7 +3,6 @@ import Garbage from '../models/garbageModel.js';
 export const createGarbage = async (req, res) => {
   try {
     const { name, lat, long } = req.body;
-    console.log(req.body)
     const garbage = new Garbage({ name, lat, long });
     await garbage.save();
     res.status(201).json({ success: true, data: garbage });

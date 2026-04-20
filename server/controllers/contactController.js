@@ -18,6 +18,7 @@ export const sendContactMessage = catchAsync(async (req, res, next) => {
   const existing = await Contact.findOne({ user: userId });
 
   if (existing) {
+    console.log("comes here");
     const diff = now - existing.lastSentAt;
 
     if (diff < cooldownMs) {
@@ -81,7 +82,9 @@ export const getContactStatus = catchAsync(async (req, res, next) => {
 
 export const getAllContacts = async (req, res) => {
   try {
-    const messages = await Contact.find().sort({ createdAt: -1 }); // latest first
+    const messages = await Contact.find()
+    .populate("user")
+    .sort({ createdAt: -1 });
     res.status(200).json(messages);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch messages" });

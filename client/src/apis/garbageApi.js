@@ -59,7 +59,6 @@ export const getAllGarbageDumps = async () => {
   }
 };
 
-//  deactivate location
 export const deactivateLocation = async (id) => {
   try {
     const res = await api.patch(`/location/${id}/deactivate`, {

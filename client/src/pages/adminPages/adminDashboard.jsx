@@ -12,14 +12,11 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const uid = localStorage.getItem("firebaseUID");
-      if (uid) {
-        try {
-          const data = await getMe(uid);
-          setUser(data);
-        } catch (err) {
-          console.error("Error fetching user data", err);
-        }
+      try {
+        const data = await getMe();
+        setUser(data);
+      } catch (err) {
+        console.error("Error fetching user data", err);
       }
     };
     fetchUser();
@@ -62,106 +59,63 @@ export default function AdminDashboard() {
     </motion.div>
   );
 
-  return (
-    <div className="min-h-screen py-12 px-6 flex flex-col items-center bg-gradient-to-br from-purple-950 to-black text-white">
-      {/* Header */}
-      <motion.div
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6 }}
-        className="text-center mb-12"
-      >
-        <h1 className="text-4xl font-bold mb-2">Admin Dashboard</h1>
-        <p className="text-lg text-gray-300">
-          Welcome back, {user.name}! Here's an overview of your admin tools.
-        </p>
-      </motion.div>
+ return (
+  <div className="min-h-screen py-12 px-6 flex flex-col items-center bg-gradient-to-br from-purple-950 to-black text-white">
+    
+    {/* Header */}
+    <motion.div
+      initial={{ y: -20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.6 }}
+      className="text-center mb-12"
+    >
+      <h1 className="text-4xl font-bold mb-2">Admin Dashboard</h1>
+      <p className="text-lg text-gray-300">
+        Welcome back, {user.name}!
+      </p>
+    </motion.div>
 
-      {/* Top Info Card */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-6xl mb-10">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="bg-white/10 backdrop-blur-md rounded-3xl shadow-xl border border-purple-400 p-8 flex flex-col items-center text-center"
-        >
-          <Avatar
-            src={user.profilePicture || "https://i.pravatar.cc/100"}
-            sx={{ width: 120, height: 120, bgcolor: deepPurple[500], mb: 3 }}
-          />
-          <h2 className="text-2xl font-semibold">{user.name}</h2>
-          <p className="text-sm bg-purple-600/40 text-white px-4 py-1 rounded-full mt-2 shadow-md">
-            {user.role.toUpperCase()}
-          </p>
-          <p className="text-sm text-white mt-4 max-w-sm">
-            You have administrative privileges. Use the tools below to manage users, view transactions, and update content.
-          </p>
-        </motion.div>
+    {/* Centered Profile Card */}
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.5 }}
+      className="bg-white/10 backdrop-blur-md rounded-3xl shadow-xl border border-purple-400 p-8 flex flex-col items-center text-center max-w-md w-full mb-12"
+    >
+      <Avatar
+        src={user.profilePicture || "https://i.pravatar.cc/100"}
+        sx={{ width: 120, height: 120, mb: 3 }}
+      />
+      <h2 className="text-2xl font-semibold">{user.name}</h2>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-          className="bg-white/10 backdrop-blur-md rounded-3xl shadow-xl border border-purple-400 p-8 text-white flex flex-col justify-between"
-        >
-          <div className="space-y-4 text-lg">
-            <div className="flex justify-between">
-              <span className="font-medium">Users:</span>
-              <span className="font-bold text-purple-300">Manage All</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-medium">Transactions:</span>
-              <span className="font-bold text-purple-300">View Records</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-medium">Reports:</span>
-              <span className="font-bold text-purple-300">Generate PDF</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-medium">Wallet Balance:</span>
-              <span className="font-bold text-purple-300">₹{user.walletBalance}</span>
-            </div>
-          </div>
-        </motion.div>
-      </div>
+      <p className="text-sm bg-purple-600/40 px-4 py-1 rounded-full mt-2">
+        {user.role.toUpperCase()}
+      </p>
 
-      {/* Feature Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl">
-        <AdminCard
-          title="Manage Users"
-          description="View, update, or remove users from the platform."
-          link="/admin/users"
-          buttonLabel="Users"
-        />
-        <AdminCard
-          title="Transaction History"
-          description="Track every wallet transaction and user activity."
-          link="/admin/transactions"
-          buttonLabel="Transactions"
-          delay={0.2}
-        />
-        <AdminCard
-          title="Update Content"
-          description="Modify platform banners, texts, and settings."
-          link="/admin/settings"
-          buttonLabel="Settings"
-          delay={0.4}
-        />
-      </div>
+      <p className="text-sm mt-4 max-w-sm">
+        You have administrative privileges. Use the tools below to manage users, view transactions, and update content.
+      </p>
+    </motion.div>
 
-      {/* Bottom Buttons */}
-      <div className="mt-10 flex gap-4">
-        <Link to="/profile">
-          <Button variant="outlined" sx={{ borderColor: "#9C27B0", color: "#9C27B0" }}>
-            Edit Profile
-          </Button>
-        </Link>
-        <Link to="/admin/contact-messages">
-          <Button variant="outlined" sx={{ borderColor: "#9C27B0", color: "#9C27B0" }}>
-            Contact Support
-          </Button>
-        </Link>
-      </div>
+    {/* Second Row - Only 2 Cards */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
+      
+      <AdminCard
+        title="Transaction History"
+        description="Track every wallet transaction and user activity."
+        link="/admin/transactions"
+        buttonLabel="Transactions"
+      />
+
+      <AdminCard
+        title="Contact Support"
+        description="View and respond to user queries and messages."
+        link="/admin/contact-messages"
+        buttonLabel="Support"
+        delay={0.2}
+      />
+
     </div>
-  );
+  </div>
+);
 }

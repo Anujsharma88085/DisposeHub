@@ -7,6 +7,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import DeleteIcon from '@mui/icons-material/Delete';
 import io from 'socket.io-client';
 import { deactivateLocation } from "../apis/garbageApi";
+import { getSocket } from '../socket/socket';
 
 const Sidebar = styled(Paper)(({ theme }) => ({
   width: '100%',
@@ -23,10 +24,11 @@ const Sidebar = styled(Paper)(({ theme }) => ({
 
 const DriverNavbar = ({ locations = [], setLocations }) => {
   const [passed, setPassed] = useState({});
-  const [socket, setSocket] = useState(null);
-  const [connectionStatus, setConnectionStatus] = useState('connecting');
+  const [connectionStatus, setConnectionStatus] = useState('connected');
   const [localLocations, setLocalLocations] = useState(locations);
   const [notification, setNotification] = useState(null);
+
+  const socket = getSocket();
 
   // Show notification
   const showNotification = (message, type = 'info') => {
@@ -36,69 +38,35 @@ const DriverNavbar = ({ locations = [], setLocations }) => {
     }, 3000);
   };
 
-  // Update local state when prop changes
   useEffect(() => {
     setLocalLocations(locations);
   }, [locations]);
 
   // Initialize socket for real-time updates
   useEffect(() => {
-    const socketUrl = 'http://localhost:3000';
-    
-    const newSocket = io(socketUrl, {
-      withCredentials: true,
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-    });
-    
-    newSocket.on('connect', () => {
-      console.log('✅ Navbar socket connected');
-      setConnectionStatus('connected');
-      showNotification('Connected to real-time server', 'success');
-      
-      // Identify as driver
-      newSocket.emit('driver-connect', { 
-        driverId: 'driver',
-        timestamp: new Date().toISOString()
-      });
-    });
-    
-    newSocket.on('connect_error', (error) => {
-      console.error('❌ Navbar socket connection error:', error);
-      setConnectionStatus('error');
-    });
-    
-    newSocket.on('disconnect', () => {
-      console.log('🔌 Navbar socket disconnected');
-      setConnectionStatus('disconnected');
-    });
-    
-    // Listen for new pickup locations from users
-    newSocket.on('new-pickup-location', (pickupLocation) => {
-      console.log('🆕 New pickup location received in navbar:', pickupLocation);
+
+    socket.on('new-pickup-location', (pickupLocation) => {
       setLocalLocations(prev => {
-        if (prev.some(loc => loc._id === pickupLocation.id)) return prev;
+        const filtered = prev.filter(
+          (loc) => loc.id !== pickupLocation.id
+        );
         const newLocation = {
           _id: pickupLocation.id,
           id: pickupLocation.id,
           lat: pickupLocation.lat,
-          long: pickupLocation.lng,
-          lng: pickupLocation.lng,
+          long: pickupLocation.lng || pickupLocation.long,
+          lng: pickupLocation.lng || pickupLocation.long,
           locationName: pickupLocation.name,
           name: pickupLocation.name,
           active: true,
           timestamp: pickupLocation.timestamp
         };
-        return [newLocation, ...prev];
+        return [newLocation, ...filtered];
       });
       showNotification(`New pickup request received!`, 'info');
     });
     
-    // Listen for pickup location removed (completed or cancelled)
-    newSocket.on('pickup-location-removed', (pickupId) => {
-      console.log('🗑️ Pickup location removed in navbar:', pickupId);
+    socket.on('pickup-location-removed', (pickupId) => {
       setLocalLocations(prev => prev.filter(loc => loc._id !== pickupId));
       if (setLocations) {
         setLocations(prev => prev.filter(loc => loc._id !== pickupId));
@@ -106,28 +74,15 @@ const DriverNavbar = ({ locations = [], setLocations }) => {
       showNotification('A pickup request was completed', 'success');
     });
     
-    setSocket(newSocket);
     
     return () => {
-      if (newSocket) {
-        newSocket.off('connect');
-        newSocket.off('connect_error');
-        newSocket.off('disconnect');
-        newSocket.off('new-pickup-location');
-        newSocket.off('pickup-location-removed');
-        newSocket.disconnect();
+      if (socket) {
+        socket.off('new-pickup-location');
+        socket.off('pickup-location-removed');
       }
     };
   }, [setLocations]);
 
-  const handlePass = (Id) => {
-    setPassed((prev) => ({ ...prev, [Id]: true }));
-    showNotification('Task passed to another driver', 'info');
-  };
-
-  const handleTake = (name) => {
-    showNotification(`You are going to complete task: ${name}`, 'success');
-  };
 
   const handleThrown = async (id) => {
     const confirm = window.confirm("Have you thrown the garbage?");
@@ -156,16 +111,6 @@ const DriverNavbar = ({ locations = [], setLocations }) => {
 
   return (
     <Sidebar elevation={0}>
-      {/* Notification */}
-      {notification && (
-        <div className={`fixed top-4 right-4 z-[2000] p-3 rounded-lg shadow-lg text-white text-sm ${
-          notification.type === 'success' ? 'bg-green-500' :
-          notification.type === 'error' ? 'bg-red-500' :
-          'bg-blue-500'
-        }`}>
-          {notification.message}
-        </div>
-      )}
 
       {/* Connection Status Indicator */}
       <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
@@ -243,44 +188,6 @@ const DriverNavbar = ({ locations = [], setLocations }) => {
             <Divider sx={{ my: 1.5, borderColor: 'rgba(255,255,255,0.2)' }} />
 
             <Box display="flex" gap={1} flexWrap="wrap">
-              <Tooltip title="Take Task">
-                <Button
-                  variant="contained"
-                  sx={{
-                    background: 'linear-gradient(to right, #8b5cf6, #a855f7)',
-                    color: '#fff',
-                    '&:hover': {
-                      background: 'linear-gradient(to right, #7c3aed, #9333ea)',
-                    },
-                    borderRadius: 3,
-                    textTransform: 'none',
-                  }}
-                  startIcon={<CheckCircleIcon />}
-                  onClick={() => handleTake(loc.name || loc.locationName)}
-                >
-                  Take
-                </Button>
-              </Tooltip>
-
-              <Tooltip title="Pass Task">
-                <Button
-                  variant="outlined"
-                  sx={{
-                    borderColor: '#e879f9',
-                    color: '#f9a8d4',
-                    '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    },
-                    borderRadius: 3,
-                    textTransform: 'none',
-                  }}
-                  startIcon={<ClearIcon />}
-                  onClick={() => handlePass(loc._id)}
-                >
-                  Pass
-                </Button>
-              </Tooltip>
-
               <Tooltip title="Mark Thrown">
                 <Button
                   variant="contained"
@@ -294,7 +201,7 @@ const DriverNavbar = ({ locations = [], setLocations }) => {
                     textTransform: 'none',
                   }}
                   startIcon={<DeleteIcon />}
-                  onClick={() => handleThrown(loc._id)}
+                  onClick={() => handleThrown(loc.id)}
                 >
                   Thrown
                 </Button>

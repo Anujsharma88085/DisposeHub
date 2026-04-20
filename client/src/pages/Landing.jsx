@@ -6,15 +6,15 @@ import locationImage from '../assets/garbage2.jpg';
 import instantResultsImage from '../assets/garbage4.jpg';
 import recyclingInfoImage from '../assets/education.jpg';
 import garbageCollectionImage from '../assets/garbage_van.jpg';
-import { getMe } from '../apis/userApi';
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 
-export default function LandingPage({ isLoggedIn, role }) {
-  
-    const location = useLocation();
+export default function LandingPage() {
+  const user = useSelector((state) => state.auth.user);
+
+  const role = user?.role;
+  const isLoggedIn = !!user;
 
 
   return (
