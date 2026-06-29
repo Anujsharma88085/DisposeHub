@@ -11,7 +11,7 @@ const api = axios.create({
 // save pickup location
 export const savePickupLocation = async (location) => {
   try {
-    const response = await api.post("/location/save", location);
+    const response = await api.post("/api/v1/location/save", location);
 
     return response.data;
   } catch (error) {
@@ -24,7 +24,7 @@ export const savePickupLocation = async (location) => {
 // get active locations
 export const getActiveLocations = async () => {
   try {
-    const res = await api.get("/location/active-locations");
+    const res = await api.get("/api/v1/location/active-locations");
 
     return res.data.locations || [];
   } catch (error) {
@@ -36,7 +36,7 @@ export const getActiveLocations = async () => {
 
 export const getUserActiveLocation = async () => {
   try {
-    const res = await api.get("/location/my-active-location");
+    const res = await api.get("/api/v1/location/my-active-location");
     return res.data.location || null;
   } catch (error) {
     if (error.response?.status === 404) {
@@ -50,7 +50,7 @@ export const getUserActiveLocation = async () => {
 
 export const getAllGarbageDumps = async () => {
   try {
-    const res = await api.get("/garbage/all");
+    const res = await api.get("/api/v1/garbage/all");
     return res.data.data || [];
   } catch (error) {
     throw new Error(
@@ -61,7 +61,7 @@ export const getAllGarbageDumps = async () => {
 
 export const deactivateLocation = async (id) => {
   try {
-    const res = await api.patch(`/location/${id}/deactivate`, {
+    const res = await api.patch(`/api/v1/location/${id}/deactivate`, {
       active: false,
     });
     return res.data;

@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api/v1";
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -10,32 +10,32 @@ const api = axios.create({
 
 /* ================= SIGNUP ================= */
 export const signupUser = async (userData) => {
-  const res = await api.post("/users/signup", userData);
+  const res = await api.post("/api/v1/users/signup", userData);
   return res.data;
 };
 
 /* ================= LOGIN ================= */
 export const loginUser = async (credentials) => {
-  const res = await api.post("/users/login", credentials);
+  const res = await api.post("/api/v1/users/login", credentials);
   return res.data;
 };
 
 /* ================= LOGOUT ================= */
 export const logoutUser = async () => {
-  const res = await api.post("/users/logout");
+  const res = await api.post("/api/v1/users/logout");
   return res.data;
 };
 
 /* ================= FORGOT PASSWORD ================= */
 export const forgotPassword = async (email) => {
-  const res = await api.post("/users/forgotPassword", { email });
+  const res = await api.post("/api/v1/users/forgotPassword", { email });
   return res.data;
 };
 
 /* ================= RESET PASSWORD ================= */
 export const resetPassword = async (token, passwords) => {
   const res = await api.patch(
-    `/users/resetPassword/${token}`,
+    `/api/v1/users/resetPassword/${token}`,
     passwords
   );
   return res.data;

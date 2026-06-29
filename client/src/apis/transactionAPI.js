@@ -9,13 +9,13 @@ const api = axios.create({
 });
 
 export const fetchUserTransactions = async () => {
-  const res = await api.get("/transactions/my");
+  const res = await api.get("/api/v1/transactions/my");
   return res.data.data.transactions;
 };
 
 export const withdrawMoney = async (formData) => {
   const res = await api.post(
-    "/wallet/withdraw",
+    "/api/v1/wallet/withdraw",
     formData,
     {
       headers: { "Content-Type": "application/json" },

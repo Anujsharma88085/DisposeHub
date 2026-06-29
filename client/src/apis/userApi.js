@@ -10,7 +10,7 @@ const api = axios.create({
 
 export const getMe = async () => {
   try {
-    const res = await api.get("/users/me");
+    const res = await api.get("/api/v1/users/me");
     return res.data.data.data;
   } catch (err) {
     if (err.response?.status === 401) {
@@ -24,7 +24,7 @@ export const getMe = async () => {
 export const uploadProfilePicture = async (file) => {
     const formData = new FormData();
     formData.append("profileImage", file);
-    const response = await fetch(`${API_BASE_URL}/users/upload-profile-photo`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/users/upload-profile-photo`, {
       method: "PUT",
       body: formData,
       credentials: "include",
@@ -38,7 +38,7 @@ export const uploadProfilePicture = async (file) => {
   };
   
   export const updateUserProfile = async (updatedData) => {
-    const response = await fetch(`${API_BASE_URL}/users/update-profile`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/users/update-profile`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updatedData),
