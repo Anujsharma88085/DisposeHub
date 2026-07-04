@@ -12,6 +12,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  useTheme,
+  useMediaQuery
 } from "@mui/material";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -40,13 +42,29 @@ const SignupPage = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errors, setErrors] = useState({
+    email: "",
+    password: "",
+    general: "",
+  });
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const handleSignup = async (e) => {
     e.preventDefault();
+    setErrors({
+      email: "",
+      password: "",
+      general: "",
+    });
+
     if (input.password !== input.confirmPassword) {
-      alert("Passwords do not match");
+      setErrors((prev) => ({
+        ...prev,
+        password: "Passwords do not match",
+      }));
       return;
     }
 
@@ -73,13 +91,26 @@ const SignupPage = () => {
       connectSocket();
       navigate("/dashboard");
     } catch (err) {
-      console.error("Signup error:", err.message);
-      alert(err.message);
-    }
+        const field = err.response?.data?.field;
+        const message =
+          err.response?.data?.message || "Something went wrong.";
+
+        if (field) {
+          setErrors((prev) => ({
+            ...prev,
+            [field]: message,
+          }));
+        } else {
+          setErrors((prev) => ({
+            ...prev,
+            general: message,
+          }));
+        }
+      }
   };
 
   const handleGoogleSignup = () => {
-    window.location.href = "http://localhost:3000/api/auth/google";
+    window.location.href = `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/google`;
   };
 
 
@@ -87,32 +118,53 @@ const SignupPage = () => {
     <Box
       sx={{
         display: "flex",
-        height: "100vh",
+        minHeight: "100vh",
         alignItems: "center",
-        justifyContent: "left",
+            justifyContent: {
+          xs: "center",
+          md: "flex-start",
+        },
         position: "relative",
-        overflow: "hidden",
-        margin: 0,
-        padding: 0,
+        overflowY: "auto",
+        overflowX: "hidden",
+        px: 2,
+        py: 4,
       }}
     >
-      <Box
-        sx={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          zIndex: -1,
-        }}
-      >
-        <Lottie animationData={backgroundAnimation} loop autoPlay />
-      </Box>
+      {!isMobile ? (
+        <Box
+          sx={{
+            position: "fixed",
+            inset: 0,
+            zIndex: -1,
+            overflow: "hidden",
+          }}
+        >
+          <Lottie animationData={backgroundAnimation} loop autoPlay />
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            position: "fixed",
+            inset: 0,
+            zIndex: -1,
+            background: `
+              radial-gradient(circle at top right, rgba(124,58,237,0.35) 0%, transparent 35%),
+              radial-gradient(circle at bottom left, rgba(37,99,235,0.25) 0%, transparent 35%),
+              linear-gradient(135deg, #0F172A 0%, #111827 50%, #1E1B4B 100%)
+            `,
+          }}
+        />
+      )}
 
       <Typography
         variant="h4"
         sx={{
           position: "absolute",
+          display: {
+            xs: "none",
+            md: "block",
+          },
           top: "5%",
           left: "10%",
           fontWeight: "bold",
@@ -171,8 +223,17 @@ const SignupPage = () => {
             variant="outlined"
             margin="normal"
             value={input.email}
-            onChange={(e) => setInput({ ...input, email: e.target.value })}
+            onChange={(e) => {
+              setInput({ ...input, email: e.target.value });
+
+              setErrors((prev) => ({
+                ...prev,
+                email: "",
+              }));
+            }}
             required
+            error={Boolean(errors.email)}
+            helperText={errors.email}
             sx={inputStyles}
           />
 
@@ -240,9 +301,16 @@ const SignupPage = () => {
               variant="outlined"
               margin="normal"
               value={input.confirmPassword}
-              onChange={(e) =>
-                setInput({ ...input, confirmPassword: e.target.value })
-              }
+              onChange={(e) => {
+                setInput({ ...input, confirmPassword: e.target.value });
+
+                setErrors((prev) => ({
+                  ...prev,
+                  password: "",
+                }));
+              }}
+              error={Boolean(errors.password)}
+              helperText={errors.password}
               required
               sx={{ ...inputStyles, flex: 1 }}
               InputProps={{
@@ -265,6 +333,12 @@ const SignupPage = () => {
               }}
             />
           </Box>
+
+          {errors.general && (
+            <Typography color="error" sx={{ mt: 1 }}>
+              {errors.general}
+            </Typography>
+          )}
 
           <Button fullWidth variant="contained" type="submit" sx={buttonStyles}>
             Sign Up

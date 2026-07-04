@@ -65,16 +65,16 @@ export const signup = catchAsync(async (req, res, next) => {
 
   if (role === "driver" && !vehicleNumber) {
     return next(
-      new AppError("Vehicle number is required for drivers", 400)
+      new AppError("Vehicle number is required for drivers", 400, "vehicleNumber")
     );
   }
 
-  const existingUser = await User.findOne({ email });
-  if (existingUser) {
-    return next(
-      new AppError("Email is already registered", 400)
-    );
-  }
+  // const existingUser = await User.findOne({ email });
+  // if (existingUser) {
+  //   return next(
+  //     new AppError("Email is already registered", 400, "email")
+  //   );
+  // }
 
   const newUser = await User.create({
     name,
@@ -87,21 +87,24 @@ export const signup = catchAsync(async (req, res, next) => {
 
   sendJwtCookie(newUser, res);
 
-  // Send welcome email
-  try {
-    const logoUrl = `${req.protocol}://${req.get("host")}/logo/logo.png`;
-    const dashboardURL = `${process.env.FRONTEND_URL}/dashboard`;
-    await new Email(newUser, dashboardURL, {logoUrl}).sendWelcome();
-  } catch (err) {
-    console.error("WELCOME EMAIL FAILED 💥", err);
-  }
-
   sendAuthResponse(newUser, 201, res);
+
+  const logoUrl = `${process.env.BACKEND_URL}/logo/logo.png`;
+  const dashboardURL = `${process.env.CLIENT_URL}`; 
+  
+  void (async () => {
+    try {
+      await new Email(newUser, dashboardURL, { logoUrl }).sendWelcome();
+      console.log("Welcome email sent");
+    } catch (err) {
+      console.error("WELCOME EMAIL FAILED 💥", err);
+    }
+  })();
 });
 
 export const googleCallback = (req, res) => {
   sendJwtCookie(req.user, res);
-  res.redirect("http://localhost:5173/auth/callback");
+  res.redirect(`${process.env.CLIENT_URL}/auth/callback`);
 };
 
 
@@ -173,28 +176,20 @@ export const forgotPassword = catchAsync(async (req, res, next) => {
   const resetToken = user.createPasswordResetToken();
   await user.save({ validateBeforeSave: false });
 
-  try {
-    const logoUrl = `${req.protocol}://${req.get("host")}/logo/logo.png`;
-    const resetURL = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+  res.status(200).json({
+    status: 'success',
+    message: 'If an account exists with this email, you will receive a password reset link shortly.',
+  });
 
-    await new Email(user, resetURL, {logoUrl}).sendPasswordReset();
 
-    res.status(200).json({
-      status: 'success',
-      message: 'Password Reset link is send to your Email. Please check your Email!',
+  const logoUrl = `${process.env.BACKEND_URL}/logo/logo.png`;
+  const resetURL = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+
+  new Email(user, resetURL, { logoUrl })
+    .sendPasswordReset()
+    .catch(err => {
+      console.log("Email failed:", err);
     });
-  } catch (err) {
-    user.passwordResetToken = undefined;
-    user.passwordResetExpires = undefined;
-    await user.save({ validateBeforeSave: false });
-
-    return next(
-      new AppError(
-        'There was an error sending the email. Try again later!',
-        500
-      )
-    );
-  }
 });
 
 export const resetPassword = catchAsync(async (req, res, next) => {

@@ -13,9 +13,20 @@ const handleCastErrorDB = (err) => {
 
 // Duplicate field
 const handleDuplicateFieldsDB = (err) => {
-  const value = err.errmsg.match(/(["'])(?:(?=(\\?))\2.)*?\1/)[0];
-  const message = `Duplicate field value: ${value}, Please use another value`;
-  return new AppError(message, 400);
+  const field = Object.keys(err.keyValue)[0];
+  const value = err.keyValue[field];
+
+  let message;
+
+  if (field === "email") {
+    message = "Email is already registered.";
+  } else if (field === "vehicleNumber") {
+    message = "Vehicle number is already registered.";
+  } else {
+    message = `${field} '${value}' already exists.`;
+  }
+
+  return new AppError(message, 400, field);
 };
 
 // Validation errors
@@ -23,6 +34,18 @@ const handleValidationErrorDB = (err) => {
   const errors = Object.values(err.errors).map((el) => el.message);
   const message = `Invalid input data. ${errors.join(". ")}`;
   return new AppError(message, 400);
+};
+
+const errorTemplate = fs.readFileSync(
+    path.join(rootDir, "views/error/error.html"),
+    "utf-8"
+);
+
+const renderErrorPage = (message) => {
+  return errorTemplate.replace(
+    "{{ERROR_MESSAGE}}",
+    message || "Something went wrong"
+  );
 };
 
 /* ===================== DEV ERROR ===================== */
@@ -39,26 +62,25 @@ const sendErrorDev = (err, req, res) => {
   }
 
   // Rendered website
-  const htmlPath = path.join(rootDir, "views/error/error.html");
-  let html = fs.readFileSync(htmlPath, "utf-8");
-  html = html.replace("{{ERROR_MESSAGE}}", err.message || "Unknown error");
-
-  res.status(err.statusCode || 500).send(html);
+  res.status(err.statusCode || 500).send(renderErrorPage(err.message || "Unknown error"));
 };
 
 /* ===================== PROD ERROR ===================== */
 
 const sendErrorProd = (err, req, res) => {
+  if (!err.isOperational) {
+    console.log("ERROR 💥", err);
+  }
+
   // API
   if (req.originalUrl.startsWith("/api")) {
     if (err.isOperational) {
       return res.status(err.statusCode).json({
         status: err.status,
+        field: err.field,
         message: err.message,
       });
     }
-
-    console.log("ERROR 💥", err);
 
     return res.status(500).json({
       status: "error",
@@ -67,22 +89,12 @@ const sendErrorProd = (err, req, res) => {
   }
 
   // Rendered website
-  const htmlPath = path.join(rootDir, "views/error/error.html");
+  const statusCode = err.isOperational ? err.statusCode : 500;
+  const message = err.isOperational
+    ? err.message
+    : "Please try again later.";
 
-  if (err.isOperational) {
-    let html = fs.readFileSync(htmlPath, "utf-8");
-    html = html.replace(
-      "{{ERROR_MESSAGE}}",
-      err.message || "Something went wrong"
-    );
-    return res.status(err.statusCode || 500).send(html);
-  }
-
-  console.log("ERROR 💥", err);
-
-  let html = fs.readFileSync(htmlPath, "utf-8");
-  html = html.replace("{{ERROR_MESSAGE}}", "Please try again later.");
-  res.status(500).send(html);
+  return res.status(statusCode).send(renderErrorPage(message));
 };
 
 /* ===================== FIREBASE ERROR ===================== */

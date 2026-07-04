@@ -5,8 +5,18 @@ import {
   TextField,
   Button,
   Typography,
+  InputAdornment,
+  IconButton,
   Divider,
+  useTheme,
+  useMediaQuery
 } from "@mui/material";
+import {
+  Visibility,
+  VisibilityOff,     
+  Google as GoogleIcon,
+  Facebook as FacebookIcon,
+} from "@mui/icons-material";
 import { Link, useNavigate } from "react-router-dom";
 import {connectSocket} from "../../socket/socket"
 import { loginUser } from "../../apis/authApi";
@@ -15,8 +25,6 @@ import { loginSuccess } from "../../redux/authSlice";
 import Lottie from "lottie-react";
 import backgroundAnimation from "../../assets/animations/background-animation.json";
 import { Typewriter } from "react-simple-typewriter";
-import GoogleIcon from "@mui/icons-material/Google";
-import FacebookIcon from "@mui/icons-material/Facebook";
 import { getMe } from "../../apis/userApi";
 
 
@@ -25,8 +33,11 @@ const LoginPage = () => {
   const [input, setInput] = useState({ email: "", password: "" });
   const [role, setRole] = useState("");
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const fetchUser = async () => {
     const user = await getMe();
@@ -54,6 +65,7 @@ const LoginPage = () => {
 
   const handleChange = (e) => {
     setInput({ ...input, [e.target.name]: e.target.value });
+    setError("");
   };
 
   const handleLogin = async (e) => {
@@ -79,13 +91,12 @@ const LoginPage = () => {
         navigate("/dashboard");
       }
     } catch (error) {
-      console.error("Login error:", error.message);
       setError(error.response?.data?.message || "Invalid credentials. Try again.");
     }
   };
 
     const handleGoogleLogin = () => {
-      window.location.href = "http://localhost:3000/api/auth/google";
+      window.location.href = `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/google`;
     };
 
   return (
@@ -102,23 +113,40 @@ const LoginPage = () => {
       }}
     >
 
-      <Box
-        sx={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          zIndex: -1,
-        }}
-      >
-        <Lottie animationData={backgroundAnimation} loop autoPlay />
-      </Box>
+      {!isMobile ? (
+        <Box
+          sx={{
+            position: "fixed",
+            inset: 0,
+            zIndex: -1,
+            overflow: "hidden",
+          }}
+        >
+          <Lottie animationData={backgroundAnimation} loop autoPlay />
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            position: "fixed",
+            inset: 0,
+            zIndex: -1,
+            background: `
+              radial-gradient(circle at top right, rgba(124,58,237,0.35) 0%, transparent 35%),
+              radial-gradient(circle at bottom left, rgba(37,99,235,0.25) 0%, transparent 35%),
+              linear-gradient(135deg, #0F172A 0%, #111827 50%, #1E1B4B 100%)
+            `,
+          }}
+        />
+      )}
 
       <Typography
         variant="h4"
         sx={{
           position: "absolute",
+          display: {
+            xs: "none",
+            md: "block",
+          },
           top: "15%",
           left: "10%",
           fontWeight: "bold",
@@ -188,7 +216,7 @@ const LoginPage = () => {
             fullWidth
             label="Password"
             name="password"
-            type="password"
+            type={showPassword ? "text" : "password"}
             variant="outlined"
             margin="normal"
             value={input.password}
@@ -201,6 +229,22 @@ const LoginPage = () => {
                 "&:hover fieldset": { borderColor: "#ffffff" },
                 "&.Mui-focused fieldset": { borderColor: "#ffffff" },
               },
+            }}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowPassword(!showPassword)}
+                    edge="end"
+                  >
+                    {showPassword ? (
+                      <VisibilityOff sx={{ color: "#ffffff" }} />
+                    ) : (
+                      <Visibility sx={{ color: "#ffffff" }} />
+                    )}
+                  </IconButton>
+                </InputAdornment>
+              ),
             }}
           />
           <Button

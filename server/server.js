@@ -50,15 +50,19 @@ io.use((socket, next) => {
   }
 });
 
-/* ================= DATABASE ================= */
-connectDB();
-
-/* ================= SOCKET LOGIC ================= */
-initSocket(io);
-initLeaderboardSocket(io);
 
 /* ================= START SERVER ================= */
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-});
+const startServer = async () => {
+  await connectDB();
+
+  initSocket(io);
+  initLeaderboardSocket(io);
+
+  const PORT = process.env.PORT || 3000;
+
+  server.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+  });
+};
+
+startServer();
