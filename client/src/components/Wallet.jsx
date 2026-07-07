@@ -4,7 +4,7 @@ import WalletBg from '../assets/transactionPage-bg.jpeg';
 import { getMe } from '../apis/userApi';
 import { withdrawMoney } from '../apis/transactionAPI';
 import { useDispatch } from "react-redux";
-import { updateWallet } from "../redux/authSlice";
+import { updateWallet } from "../redux/slices/authSlice";
 
 export const Wallet = () => {
   const MIN_WITHDRAWAL = Number(import.meta.env.VITE_MIN_WITHDRAWAL) || 50;

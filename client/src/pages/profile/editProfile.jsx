@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
 import {uploadProfilePicture, updateUserProfile } from "../../apis/userApi";
 import { useDispatch } from "react-redux";
-import { updateUser } from "../../redux/authSlice";
+import { updateUser } from "../../redux/slices/authSlice";
 
 export default function EditUserProfile() {
   const location = useLocation();

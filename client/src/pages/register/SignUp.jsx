@@ -28,7 +28,7 @@ import Lottie from "lottie-react";
 import backgroundAnimation from "../../assets/animations/background-animation.json";
 import { Typewriter } from "react-simple-typewriter";
 import { useDispatch } from "react-redux";
-import { loginSuccess } from "../../redux/authSlice";
+import { loginSuccess } from "../../redux/slices/authSlice";
 import {connectSocket} from "../../socket/socket"
 
 const SignupPage = () => {

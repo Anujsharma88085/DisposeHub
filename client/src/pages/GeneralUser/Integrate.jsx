@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDispatch } from "react-redux";
-import { logout } from "../../redux/authSlice";
+import { logout } from "../../redux/slices/authSlice";
 import { useNavigate } from 'react-router-dom';
 import LeafletMap from '../../components/LeafletMap';
 import { logoutUser } from '../../apis/authApi';

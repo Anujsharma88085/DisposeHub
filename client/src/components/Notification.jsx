@@ -4,7 +4,7 @@ import { Player } from "@lottiefiles/react-lottie-player";
 import loadingAnimation from "../assets/loading.json";
 import { getSocket } from "../socket/socket";
 import { markNotificationsAsRead } from "../apis/notificationApi";
-import { markAllAsRead } from "../redux/notificationSlice";
+import { markAllAsRead } from "../redux/slices/notificationSlice";
 
 
 

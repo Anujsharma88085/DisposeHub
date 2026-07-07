@@ -5,9 +5,9 @@ import { Outlet } from "react-router-dom";
 import Navbar from "../components/websiteNavbar";
 import { getNotifications } from "../apis/notificationApi";
 import { getSocket } from "../socket/socket";
-import { setLoading, setNotifications, addNotification, } from "../redux/notificationSlice";
+import { setLoading, setNotifications, addNotification, } from "../redux/slices/notificationSlice";
 import { EVENTS } from "../socket/events";
-import { updateUser } from "../redux/authSlice";
+import { updateUser } from "../redux/slices/authSlice";
 
 
 export default function AppLayout() {
