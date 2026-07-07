@@ -11,135 +11,152 @@ import {
   TableRow,
   Typography,
   Box,
+  Tabs,
+  Tab,
   CircularProgress
 } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
 import { motion } from 'framer-motion';
-import Lottie from 'lottie-react';
+import { useDispatch, useSelector } from "react-redux";
+import { getLeaderboard } from '../apis/leaderboardApi';
+import {
+  setLeaderboard,
+  setLoading,
+} from "../redux/slices/leaderboardSlice";
+import { EVENTS } from '../socket/events';
 
 const Leaderboard = () => {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [socketError, setSocketError] = useState(false);
-  const [lottieData, setLottieData] = useState(null);
-  const theme = useTheme();
+  const [selectedRole, setSelectedRole] = useState("user");
+  const dispatch = useDispatch();
 
-  // const setupSocket = () => {
-  //   try {
-  //     if (!socketRef.current) {
-  //       socketRef.current = io("http://localhost:3000", {
-  //         withCredentials: true,
-  //       });;
-
-  //       socketRef.current.on('connect', () => {
-  //         setSocketError(false);
-  //       });
-
-  //       socketRef.current.on('leaderboard', (data) => {
-  //         setUsers(data);
-  //         setLoading(false);
-  //       });
-
-  //       socketRef.current.on('connect_error', () => {
-  //         setSocketError(true);
-  //         setLoading(false);
-  //       });
-  //     }
-  //   } catch (err) {
-  //     console.error(err);
-  //     setSocketError(true);
-  //     setLoading(false);
-  //   }
-  // };
-
-  // const cleanupSocket = () => {
-  //   if (socketRef.current) {
-  //     socketRef.current.off('leaderboard');
-  //     socketRef.current.disconnect();
-  //     socketRef.current = null;
-  //   }
-  // };
+  const { leaderboard, loading } = useSelector(
+      (state) => state.leaderboard
+  );
 
   useEffect(() => {
-      const socket = getSocket();
-
-      if (!socket) {
-        setSocketError(true);
-        setLoading(false);
-        return;
-      }
-
-      socket.on("leaderboard", (data) => {
-        setUsers(data);
-        setLoading(false);
-        setSocketError(false);
-      });
-
-      socket.on("connect_error", () => {
-        setSocketError(true);
-        setLoading(false);
-      });
-
-      return () => {
-        socket.off("leaderboard");
-        socket.off("connect_error");
-      };
-    }, []);
-
-  // Fetch Lottie JSON from URL
-  useEffect(() => {
-    const fetchLottie = async () => {
+    const fetchLeaderboard = async () => {
       try {
-        const res = await fetch('https://lottie.host/9a550431-d23b-45c5-9d95-6a1cd5c91a77/tUOMl7t47e.json');
-        const json = await res.json();
-        setLottieData(json);
-      } catch (err) {
-        console.error("Failed to load Lottie animation", err);
+        dispatch(setLoading(true));
+
+        const data = await getLeaderboard(selectedRole);
+
+        dispatch(setLeaderboard(data.leaderboard));
+      } catch (error) {
+        console.error("Failed to fetch leaderboard:", error);
+      } finally {
+        dispatch(setLoading(false));
       }
     };
 
-    fetchLottie();
-  }, []);
+    fetchLeaderboard();
+  }, [dispatch, selectedRole]);
 
-  const sortedUsers = [...users].sort((a, b) => b.points - a.points);
+  useEffect(() => {
+    const socket = getSocket();
 
-  const getMedalColor = (index) => {
-    if (index === 0) return '#FFD700';
-    if (index === 1) return '#C0C0C0';
-    if (index === 2) return '#CD7F32';
-    return '#BB86FC';
+    if (!socket) return;
+
+    const handleLeaderboardUpdate = async () => {
+        try {
+            dispatch(setLoading(true));
+
+            const data = await getLeaderboard(selectedRole);
+
+            dispatch(setLeaderboard(data.leaderboard));
+        } catch (error) {
+            console.error(error);
+        } finally {
+            dispatch(setLoading(false));
+        }
+    };
+
+    socket.on(EVENTS.LEADERBOARD_UPDATE, handleLeaderboardUpdate);
+
+    return () => {
+        socket.off(EVENTS.LEADERBOARD_UPDATE, handleLeaderboardUpdate);
+    };
+  }, [dispatch, selectedRole]);
+
+  const sortedUsers = leaderboard;
+
+  const getRankStyle = (index) => {
+    switch (index) {
+      case 0:
+        return {
+          backgroundColor: "#00ff48",
+          color: "#000",
+        };
+
+      case 1:
+        return {
+          backgroundColor: "#1e956f",
+          color: "#000",
+        };
+
+      case 2:
+        return {
+          backgroundColor: "#0e7c90",
+          color: "#fff",
+        };
+
+      default:
+        return {
+          backgroundColor: "#334155",
+          color: "#E2E8F0",
+        };
+    }
   };
 
   return (
     <Box sx={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #2D0035, #150050)',
+      background: "linear-gradient(180deg, #0F172A 0%, #1E293B 100%)",
       color: '#fff',
       py: 6,
       px: 2
     }}>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
-          {lottieData && (
-            <Lottie animationData={lottieData} style={{ height: 180 }} />
-          )}
-        </Box>
-      </motion.div>
 
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 1 }}
       >
-        <Typography variant="h3" align="center" gutterBottom sx={{
-          fontWeight: 'bold',
-          background: 'linear-gradient(to right, #ffffff, #BB86FC)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-        }}>
-          🚀 Leaderboard: Top Performers
+        <Typography variant="h4" align="center" gutterBottom sx={{
+              fontWeight: 700,
+              color: "#F8FAFC",
+              letterSpacing: 1,
+              mb: 4,
+          }}>
+          {selectedRole === "user"
+            ? "🌱 Eco Users Leaderboard"
+            : "🚛 Driver Leaderboard"
+          }
         </Typography>
       </motion.div>
+
+      <Box
+          sx={{
+              display: "flex",
+              justifyContent: "center",
+              mb: 4,
+          }}
+      >
+          <Tabs
+              value={selectedRole}
+              onChange={(event, value) => setSelectedRole(value)}
+              textColor="inherit"
+              indicatorColor="secondary"
+          >
+              <Tab
+                  value="user"
+                  label="Eco Users"
+              />
+
+              <Tab
+                  value="driver"
+                  label="Drivers"
+              />
+          </Tabs>
+      </Box>
 
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
@@ -150,10 +167,6 @@ const Leaderboard = () => {
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}>
             <CircularProgress sx={{ color: '#BB86FC' }} />
           </Box>
-        ) : socketError ? (
-          <Typography align="center" color="error" mt={6}>
-            ⚠️ Could not connect to leaderboard server.
-          </Typography>
         ) : sortedUsers.length === 0 ? (
           <Typography align="center" mt={6} sx={{ color: '#BB86FC' }}>
             No users available on the leaderboard yet.
@@ -164,17 +177,18 @@ const Leaderboard = () => {
             mx: 'auto',
             borderRadius: 4,
             backdropFilter: 'blur(12px)',
-            background: 'rgba(255, 255, 255, 0.1)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
+            backgroundColor: "#1E293B",
+            border: "1px solid #334155",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
             overflowX: 'auto'
           }}>
             <Table>
               <TableHead>
-                <TableRow sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }}>
-                  <TableCell sx={{ color: '#BB86FC', fontWeight: 'bold' }}>Rank</TableCell>
-                  <TableCell sx={{ color: '#BB86FC', fontWeight: 'bold' }}>User</TableCell>
-                  <TableCell sx={{ color: '#BB86FC', fontWeight: 'bold' }}>Email</TableCell>
-                  <TableCell sx={{ color: '#BB86FC', fontWeight: 'bold' }}>Points</TableCell>
+                <TableRow sx={{ bgcolor: "#0F172A" }}>
+                  <TableCell sx={{ color: "#38BDF8", fontWeight: 'bold' }}>Rank</TableCell>
+                  <TableCell sx={{ color: "#38BDF8", fontWeight: 'bold' }}>User</TableCell>
+                  <TableCell sx={{ color: "#38BDF8", fontWeight: 'bold' }}>Email</TableCell>
+                  <TableCell sx={{ color: "#38BDF8", fontWeight: 'bold' }}>Points</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -188,16 +202,26 @@ const Leaderboard = () => {
                     <TableCell>
                       <Box
                         sx={{
-                          backgroundColor: getMedalColor(index),
-                          color: index < 3 ? 'black' : 'white',
+                          ...getRankStyle(index),
                           px: 2,
-                          py: 0.5,
+                          py: 0.8,
                           borderRadius: 2,
-                          fontWeight: 'bold',
-                          textAlign: 'center',
+                          fontWeight: 700,
+                          textAlign: "center",
+                          minWidth: 48,
+                          boxShadow:
+                            index < 3
+                              ? "0 0 12px rgba(255,255,255,0.25)"
+                              : "none",
                         }}
                       >
-                        {index + 1}
+                        {index === 0
+                          ? `🥇 ${index + 1}`
+                          : index === 1
+                          ? `🥈 ${index + 1}`
+                          : index === 2
+                          ? `🥉 ${index + 1}`
+                          : index + 1}
                       </Box>
                     </TableCell>
                     <TableCell>
@@ -209,7 +233,7 @@ const Leaderboard = () => {
                       </Box>
                     </TableCell>
                     <TableCell sx={{ color: 'white' }}>{user.email}</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', color: '#BB86FC' }}>{user.points}</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', color: "#22C55E" }}>{user.points}</TableCell>
                   </motion.tr>
                 ))}
               </TableBody>

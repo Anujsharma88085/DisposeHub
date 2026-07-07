@@ -10,6 +10,7 @@ import {
   emitPickupCancelled,
   emitPickupCompleted,
   emitNotification,
+  emitLeaderboard,
 } from "../socket/services/socketEmitter.js";
 
 
@@ -168,6 +169,8 @@ export const deactivateLocation = catchAsync(async (req, res, next) => {
   if (!user) {
     return next(new AppError("User who marked location not found", 404));
   }
+
+  emitLeaderboard();
 
   // 5. Notifications
   const [driverNotification, userNotification] = 

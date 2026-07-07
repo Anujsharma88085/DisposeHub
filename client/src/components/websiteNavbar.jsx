@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
-import { logout } from "../redux/authSlice";
+import { logout } from "../redux/slices/authSlice";
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@mui/material';
@@ -58,6 +58,15 @@ const Navbar = () => {
         >
             Dashboard
         </Link>
+
+        {role !== "admin" && (
+          <Link
+              to="/leaderboard"
+              className="inline-block bg-zinc-500 text-white font-medium px-5 py-2 rounded-lg shadow-md hover:bg-zinc-600 transition-all duration-300"
+          >
+          🏆 Leaderboard
+          </Link>
+        )}
       </div>
         
       <div className="flex items-center gap-6">

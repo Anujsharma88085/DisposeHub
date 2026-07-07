@@ -127,6 +127,6 @@ export const emitNotification = (userId, payload) => {
 
 /* -------------------- Leaderboard -------------------- */
 
-export const emitLeaderboard = (leaderboard) => {
-  io().emit(EVENTS.LEADERBOARD_UPDATE, leaderboard);
+export const emitLeaderboard = () => {
+  io().emit(EVENTS.LEADERBOARD_UPDATE);
 };

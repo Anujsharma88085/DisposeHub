@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from "react-route
 import "leaflet/dist/leaflet.css";
 import "./App.css";
 import { useDispatch } from "react-redux";
-import { loginSuccess } from "./redux/authSlice"; 
+import { loginSuccess } from "./redux/slices/authSlice"; 
 
 // Pages and Components
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -92,7 +92,7 @@ function App() {
         <Route element={<ProtectedRoute allowedRoles={["user", "driver"]} />}>
           <Route element={<AppLayout />}>
             <Route path="/map" element={<Integrate garbageDumps={garbageDumps} />} />
-            <Route path="/leader-board" element={<Leaderboard />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/editProfile" element={<EditUserProfile />} />
             <Route path="/profile" element={<UserProfile />} />

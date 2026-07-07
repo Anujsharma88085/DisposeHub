@@ -1,11 +1,13 @@
 import { configureStore } from "@reduxjs/toolkit";
-import authReducer from "./authSlice";
-import notificationReducer from "./notificationSlice";
+import authReducer from "./slices/authSlice";
+import notificationReducer from "./slices/notificationSlice";
+import leaderboardReducer from "./slices/leaderboardSlice"
 
 const store = configureStore({
   reducer: {
     auth: authReducer,
     notification: notificationReducer,
+    leaderboard: leaderboardReducer,
   },
 });
 

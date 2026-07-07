@@ -9,6 +9,7 @@ import userRoutes from './routes/userRoutes.js';
 import locationRoutes from './routes/loactionRoute.js'; 
 import garbageRoutes from './routes/garbageRoute.js';
 import notificationRoutes from "./routes/notificationRoutes.js";
+import leaderboardRoutes from "./routes/leaderboardRoutes.js";
 
 
 import dotenv from 'dotenv';
@@ -48,6 +49,7 @@ app.use("/api/v1/auth", authRoutes);
 app.use('/api/v1/locations', locationRoutes);
 app.use('/api/v1/garbage', garbageRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
+app.use("/api/v1/leaderboard", leaderboardRoutes);
 
 app.use('/api/v1/rewards', RewardDistributionRouter);
 app.use('/api/v1/wallet', walletRoutes);
