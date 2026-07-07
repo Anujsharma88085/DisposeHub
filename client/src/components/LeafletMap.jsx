@@ -155,8 +155,6 @@ const LeafletMap = ({ garbageDumps }) => {
         setPickupLocations(prev =>
           prev.filter(loc => loc._id !== id)
         );
-
-        alert("🎉 Your garbage has been collected!");
       },
     });
 

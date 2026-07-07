@@ -2,13 +2,14 @@ import mongoose from "mongoose";
 
 const notificationSchema = new mongoose.Schema(
   {
-    receiver: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // Receiver of the notification
-    messagePreview: { type: String, required: true }, // Short preview of the message
+    receiver: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    messagePreview: { type: String, required: true },
     
-    isRead: { type: Boolean, default: false }, // Read/Unread status
-    timestamp: { type: Date, default: Date.now },
+    isRead: { type: Boolean, default: false },
   },
-  
+  {
+    timestamps: true,
+  }
 );
 
 

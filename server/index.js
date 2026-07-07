@@ -8,6 +8,7 @@ import userRoutes from './routes/userRoutes.js';
 
 import locationRoutes from './routes/loactionRoute.js'; 
 import garbageRoutes from './routes/garbageRoute.js';
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 
 import dotenv from 'dotenv';
@@ -45,7 +46,8 @@ app.use(express.static(path.join(rootDir, 'public')));
 app.use('/api/v1/users', userRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use('/api/v1/locations', locationRoutes);
-app.use('/api/v1/garbage', garbageRoutes); 
+app.use('/api/v1/garbage', garbageRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
 
 app.use('/api/v1/rewards', RewardDistributionRouter);
 app.use('/api/v1/wallet', walletRoutes);

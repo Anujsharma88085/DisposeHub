@@ -174,18 +174,37 @@ export const deactivateLocation = catchAsync(async (req, res, next) => {
     await Notification.insertMany([
     {
       receiver: driverId,
-      messagePreview: `You earned ${DRIVER_POINT_REWARD} points and ₹${DRIVER_WALLET_REWARD}. Wallet balance: ₹${driver.walletBalance}`,
+      messagePreview: `You successfully collected garbage from ${location.locationName}. Reward: +${DRIVER_POINT_REWARD} points and +₹${DRIVER_WALLET_REWARD}.`,
       isRead: false,
     },
     {
       receiver: user._id,
-      messagePreview: `Your reported garbage was collected! You earned ${USER_POINT_REWARD} points and ₹${USER_WALLET_REWARD}. Wallet balance: ₹${user.walletBalance}`,
+      messagePreview: `Your garbage report at ${location.locationName} has been completed. You earned +${USER_POINT_REWARD} points and +₹${USER_WALLET_REWARD}. Thank you for helping keep the city clean!`,
       isRead: false,
     },
   ]);
 
-  emitNotification(driverId.toString(), driverNotification);
-  emitNotification(user._id.toString(), userNotification);
+  emitNotification(
+    driverId.toString(),
+    {
+        notification: driverNotification,
+        user: {
+            points: driver.points,
+            walletBalance: driver.walletBalance,
+        }
+    }
+  );
+
+  emitNotification(
+    user._id.toString(),
+    {
+        notification: userNotification,
+        user: {
+            points: user.points,
+            walletBalance: user.walletBalance,
+        }
+    }
+  );
 
   // 6. Transactions
   await Transaction.create([

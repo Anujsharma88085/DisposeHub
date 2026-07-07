@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
 import { logout } from "../redux/authSlice";
@@ -13,11 +13,16 @@ import { logoutUser } from '../apis/authApi';
 const Navbar = () => {
   const navigate = useNavigate();
   const [isBellOpen, setIsBellOpen] = useState(false);
-  const [data, setData] = useState(0);
-  const toggleNotificationBell = () => setIsBellOpen(!isBellOpen);
+
   const dispatch = useDispatch();
 
+  const unreadCount = useSelector(
+    (state) => state.notification.unreadCount
+  );
   const user = useSelector((state) => state.auth.user);
+
+  const toggleNotificationBell = () => setIsBellOpen(!isBellOpen);
+
   const role = user?.role;
 
   const handleLogout = async () => {
@@ -33,10 +38,6 @@ const Navbar = () => {
       dispatch(logout());
       navigate("/login");
     }
-  };
-
-  const handleDataFromChild = (childData) => {
-    setData(childData);
   };
 
   return (
@@ -68,13 +69,13 @@ const Navbar = () => {
           >
             <FaBell className="text-2xl text-red-400 hover:text-red-600 transform transition duration-200 hover:scale-110" />
 
-            {data > 0 && (
+            {unreadCount > 0 && (
               <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">
-                {data}
+                {unreadCount}
               </span>
             )}
 
-            {isBellOpen && <NotificationDropdown sendData={handleDataFromChild} />}
+            {isBellOpen && <NotificationDropdown />}
           </div>
         )}
 

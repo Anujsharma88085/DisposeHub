@@ -113,7 +113,7 @@ export const emitPickupCompleted = (location) => {
 
 /* -------------------- Notification -------------------- */
 
-export const emitNotification = (userId, notification) => {
+export const emitNotification = (userId, payload) => {
   const user = getSocket(userId);
 
   if (!user) return;
@@ -121,7 +121,7 @@ export const emitNotification = (userId, notification) => {
   emitToSocket(
     user.socketId,
     EVENTS.NOTIFICATION_NEW,
-    notification
+    payload
   );
 };
 

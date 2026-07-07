@@ -25,64 +25,6 @@ const Sidebar = styled(Paper)(({ theme }) => ({
 const DriverNavbar = ({ locations = [], setLocations }) => {
   const [passed, setPassed] = useState({});
   const [connectionStatus, setConnectionStatus] = useState('connected');
-  const [localLocations, setLocalLocations] = useState(locations);
-  const [notification, setNotification] = useState(null);
-
-  const socket = getSocket();
-
-  // Show notification
-  const showNotification = (message, type = 'info') => {
-    setNotification({ message, type });
-    setTimeout(() => {
-      setNotification(null);
-    }, 3000);
-  };
-
-  useEffect(() => {
-    setLocalLocations(locations);
-  }, [locations]);
-
-  // Initialize socket for real-time updates
-  useEffect(() => {
-
-    socket.on('new-pickup-location', (pickupLocation) => {
-      setLocalLocations(prev => {
-        const filtered = prev.filter(
-          (loc) => loc.id !== pickupLocation.id
-        );
-        const newLocation = {
-          _id: pickupLocation.id,
-          id: pickupLocation.id,
-          lat: pickupLocation.lat,
-          long: pickupLocation.lng || pickupLocation.long,
-          lng: pickupLocation.lng || pickupLocation.long,
-          locationName: pickupLocation.name,
-          name: pickupLocation.name,
-          active: true,
-          timestamp: pickupLocation.timestamp
-        };
-        return [newLocation, ...filtered];
-      });
-      showNotification(`New pickup request received!`, 'info');
-    });
-    
-    socket.on('pickup-location-removed', (pickupId) => {
-      setLocalLocations(prev => prev.filter(loc => loc._id !== pickupId));
-      if (setLocations) {
-        setLocations(prev => prev.filter(loc => loc._id !== pickupId));
-      }
-      showNotification('A pickup request was completed', 'success');
-    });
-    
-    
-    return () => {
-      if (socket) {
-        socket.off('new-pickup-location');
-        socket.off('pickup-location-removed');
-      }
-    };
-  }, [setLocations]);
-
 
   const handleThrown = async (id) => {
     const confirm = window.confirm("Have you thrown the garbage?");
@@ -90,22 +32,8 @@ const DriverNavbar = ({ locations = [], setLocations }) => {
 
     try {
       await deactivateLocation(id);
-      
-      // Update local state
-      setLocalLocations((prev) => prev.filter((loc) => loc._id !== id));
-      if (setLocations) {
-        setLocations((prev) => prev.filter((loc) => loc._id !== id));
-      }
-      
-      // Emit socket event
-      if (socket) {
-        socket.emit('complete-pickup', id);
-      }
-      
-      showNotification('✅ Garbage pickup completed successfully!', 'success');
     } catch (error) {
       console.error("Failed to deactivate location:", error.message);
-      showNotification('Failed to complete pickup', 'error');
     }
   };
 
@@ -141,15 +69,15 @@ const DriverNavbar = ({ locations = [], setLocations }) => {
       </Typography>
 
       <Typography variant="subtitle2" sx={{ mb: 2, color: '#fcd34d' }}>
-        📍 User pickup requests ({localLocations.length})
+        📍 User pickup requests ({locations.length})
       </Typography>
 
-      {localLocations.length === 0 ? (
+      {locations.length === 0 ? (
         <Typography sx={{ textAlign: 'center', py: 4, color: 'rgba(255,255,255,0.6)' }}>
           No active pickup requests
         </Typography>
       ) : (
-        localLocations.map((loc) => (
+        locations.map((loc) => (
           <Box
             key={loc._id || loc.id}
             sx={{

@@ -1,87 +1,86 @@
 import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Player } from "@lottiefiles/react-lottie-player";
 import loadingAnimation from "../assets/loading.json";
 import { getSocket } from "../socket/socket";
+import { markNotificationsAsRead } from "../apis/notificationApi";
+import { markAllAsRead } from "../redux/notificationSlice";
 
 
-const NotificationDropdown = ({ sendData }) => {
-  const [notifications, setNotifications] = useState([]);
-  const [count, setCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const socket = getSocket();
-    if (!socket) return;
+const NotificationDropdown = () => {
+  const {
+    notifications,
+    unreadCount,
+    loading,
+  } = useSelector((state) => state.notification);
 
-    socket.emit("fetchNotifications");
+  const dispatch = useDispatch();
 
-    socket.on("allNotifications", (fetchedNotifications) => {
-      const updated = fetchedNotifications.map((notif) => ({
-        messagePreview: notif.messagePreview,
-      }));
-      setNotifications(updated);
-      setCount(updated.length);
-      setIsLoading(false);
-    });
-
-    socket.on("newMessageNotification", (data) => {
-      setNotifications((prev) => [
-        ...prev,
-        { messagePreview: data.messagePreview },
-      ]);
-      setCount((prevCount) => prevCount + 1);
-    });
-
-    socket.on("notificationsMarkedAsRead", () => {
-      setNotifications([]);
-      setCount(0);
-    });
-
-    return () => {
-      socket.off("newMessageNotification");
-      socket.off("allNotifications");
-      socket.off("notificationsMarkedAsRead");
-    };
-  }, []);
-
-  useEffect(() => {
-    sendData(count);
-  }, [count, sendData]);
-
-  const markAsRead = () => {
-    const firebaseUID = localStorage.getItem("firebaseUID");
-    socket.emit("markNotificationsAsRead", { firebaseUID });
+  const handleMarkAllAsRead = async () => {
+     try {
+      await markNotificationsAsRead();
+      dispatch(markAllAsRead());
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
     <div className="absolute z-50 right-0 mt-6 w-80 bg-gray-900/80 backdrop-blur-2xl border border-cyan-500 shadow-xl rounded-2xl p-4 bell-dropdown transition-all duration-300 ease-in-out hover:shadow-cyan-500/50">
-      <h3 className="text-lg font-semibold text-cyan-300 flex justify-between items-center">
-        Notifications <span className="text-cyan-400">({count})</span>
+      <h3 className="text-lg font-semibold text-cyan-300 flex justify-between items-center mb-3">
+        <span>Notifications</span>
+
+        {unreadCount > 0 && (
+          <span className="bg-cyan-500 text-black text-xs font-bold px-2 py-1 rounded-full">
+            {unreadCount} New
+          </span>
+        )}
       </h3>
 
-      {isLoading ? (
+      {loading ? (
         <div className="flex justify-center items-center py-6">
           <Player src={loadingAnimation} className="w-16 h-16" autoplay loop />
         </div>
-      ) : count === 0 ? (
-        <p className="text-gray-400 text-center py-4">No new notifications</p>
+      ) : notifications.length === 0 ? (
+      <p className="text-gray-400 text-center py-4">
+        No notifications yet
+      </p>
       ) : (
         <div className="max-h-64 overflow-y-auto custom-scrollbar">
-          {notifications.map((notif, index) => (
+          {notifications.map((notif) => (
             <div
-              key={index}
-              className="p-3 border-b border-gray-600 hover:bg-gray-800/50 transition-all duration-200 rounded-lg"
+              key={notif._id}
+              className={`relative p-3 mb-2 rounded-lg border transition-all duration-200
+                ${
+                  notif.isRead
+                    ? "bg-gray-800/40 border-gray-700"
+                    : "bg-cyan-900/30 border-cyan-500"
+                }
+                hover:bg-gray-800/60`}
             >
-              <p className="text-sm text-gray-300">{notif.messagePreview}</p>
+              {!notif.isRead && (
+                <span className="absolute top-4 right-3 h-2.5 w-2.5 rounded-full bg-cyan-400"></span>
+              )}
+
+              <p
+                className={`text-sm pr-5 ${
+                  notif.isRead
+                    ? "text-gray-300 font-normal"
+                    : "text-white font-semibold"
+                }`}
+              >
+                {notif.messagePreview}
+              </p>
             </div>
           ))}
         </div>
       )}
 
-      {count > 0 && !isLoading && (
+      {unreadCount > 0 && !loading && (
         <button
-          className="text-sm text-cyan-300 mt-3 w-full py-2 bg-gray-800/50 border border-cyan-500 rounded-lg transition-all hover:bg-cyan-500/30 hover:text-white shadow-md hover:shadow-cyan-500"
-          onClick={markAsRead}
+          className="text-sm text-cyan-300 mt-3 w-full py-2 bg-gray-800/50 border border-cyan-500 rounded-lg transition-all hover:bg-cyan-500/30 hover:text-white shadow-md hover:shadow-cyan-500 cursor-pointer"
+          onClick={handleMarkAllAsRead}
         >
           Mark all as Read
         </button>
