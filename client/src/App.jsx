@@ -30,9 +30,6 @@ import ResetPassword from './components/ResetPassword';
 import ForgotPassword from './components/ForgotPassword';
 import PublicLayout from "./layouts/PublicLayout";
 import AppLayout from "./layouts/AppLayout";
-import { connectSocket, disconnectSocket } from "./socket/socket";
-
-
 
 function App() {
   const [authLoading, setAuthLoading] = useState(true);
@@ -41,14 +38,6 @@ function App() {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   const dispatch = useDispatch();
-
-  useEffect(() => {
-    connectSocket();
-
-    return () => {
-      disconnectSocket();
-    };
-  }, []);
 
   // AUTH + INITIAL FETCH
   useEffect(() => {
@@ -68,7 +57,7 @@ function App() {
 
     const fetchGarbageDumps = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/garbage/all`);
+        const response = await fetch(`${API_BASE_URL}/api/v1/garbage/all`);
         const data = await response.json();
         if (data.success) {
           setGarbageDumps(data);

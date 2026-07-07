@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { getSocket } from "../socket/socket";
 import { deactivateLocation } from '../apis/garbageApi';
+import { useSelector } from 'react-redux';
+import { emitLocationUpdate } from '../socket/emitters';
+import { getSocket } from "../socket/socket";
+import { registerDriverListeners } from "../socket/listeners";
 
 // Custom red marker (driver)
 const redIcon = new L.Icon({
@@ -34,105 +37,58 @@ const yellowIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
-const DriverLeafletMap = ({ driver, locations, setLocations, garbageDumps, activePickupLocations }) => {
+const DriverLeafletMap = ({ pickupLocations, setPickupLocations, garbageDumps }) => {
+  const [myLocation, setMyLocation] = useState(null);
+  const [loadingRoute, setLoadingRoute] = useState(false);
+
   const mapRef = useRef(null);
   const polylineRef = useRef(null);
   const routeInfoControlRef = useRef(null);
   const startMarkerRef = useRef(null);
   const endMarkerRef = useRef(null);
   const driverMarkerRef = useRef(null);
-  const [location, setLocation] = useState(null);
-  const [loadingRoute, setLoadingRoute] = useState(false);
-  const [isZooming, setIsZooming] = useState(false);
-  const [notification, setNotification] = useState(null);
-  const [completedPickups, setCompletedPickups] = useState([]);
   const userMarkersRef = useRef([]);
   const garbageMarkersRef = useRef([]);
-  const notificationTimeoutRef = useRef(null);
   const locationWatchIdRef = useRef(null);
-  const [pickupLocations, setPickupLocations] = useState([]);
+  const hasLoggedError = useRef(false);
+
+  const user = useSelector((state) => state.auth.user);
 
   const socket = getSocket();
 
-  // Show notification
-  const showNotification = (message, type = 'info') => {
-    setNotification({ message, type });
-    if (notificationTimeoutRef.current) {
-      clearTimeout(notificationTimeoutRef.current);
-    }
-    notificationTimeoutRef.current = setTimeout(() => {
-      setNotification(null);
-    }, 5000);
-  };
-
-  const mergeUniqueById = (prev, incoming) => {
-    const map = new Map();
-
-    [...prev, ...incoming].forEach((item) => {
-      if (item?.id) map.set(item.id, item);
-    });
-
-    return Array.from(map.values());
-  };
-
-  const formatLocation = (loc) => ({
-    ...loc,
-    id: loc.id,
-    lat: loc.lat,
-    lng: loc.long || loc.lng,
-    long: loc.long || loc.lng,
-    name: loc.name || loc.locationName,
-    locationName: loc.locationName || loc.name,
-    active: true,
-  });
-
-  // Initialize socket with real-time updates
   useEffect(() => {
-    const socket = getSocket();
-
     if (!socket) return;
 
-    const handleExistingLocations = (locations) => {
-      const formatted = (locations || []).map(formatLocation);
+    const cleanup = registerDriverListeners(socket, {
+      onPickupCreated: (pickup) => {
+        setPickupLocations(prev => {
+          if (prev.some(loc => loc.id === pickup.id)) {
+            return prev;
+          }
+          return [...prev, pickup];
+        });
+      },
+      onPickupUpdated: (pickup) => {
+        setPickupLocations(prev =>
+          prev.map(loc =>
+            loc.id === pickup.id ? pickup : loc
+          )
+        );
+      },
+      onPickupCompleted: ({ id }) => {
+        setPickupLocations(prev =>
+          prev.filter(loc => loc.id !== id)
+        );
+      },
+      onPickupCancelled: ({ id }) => {
+        setPickupLocations(prev =>
+          prev.filter(loc => loc.id !== id)
+        );
+      },
+    });
 
-      setPickupLocations(formatted);
-
-      setLocations?.(formatted);
-
-    };
-
-    const handleNewLocation = (pickupLocation) => {
-      const formatted = formatLocation(pickupLocation);
-
-      setPickupLocations((prev) =>
-        mergeUniqueById(prev, [formatted])
-      );
-
-      setLocations?.((prev = []) =>
-        mergeUniqueById(prev, [formatted])
-      );
-    };
-
-    const handleRemoveLocation = (pickupId) => {
-      setPickupLocations((prev) =>
-        prev.filter((loc) => loc.id !== pickupId)
-      );
-
-      setLocations?.((prev = []) =>
-        prev.filter((loc) => loc.id !== pickupId)
-      );
-    };
-
-    socket.on("existing-pickup-locations", handleExistingLocations);
-    socket.on("new-pickup-location", handleNewLocation);
-    socket.on("pickup-location-removed", handleRemoveLocation);
-
-    return () => {
-      socket.off("existing-pickup-locations", handleExistingLocations);
-      socket.off("new-pickup-location", handleNewLocation);
-      socket.off("pickup-location-removed", handleRemoveLocation);
-    };
-  }, [driver?.id, setLocations]);
+    return cleanup;
+  }, [socket]);
 
   // Create map once
   useEffect(() => {
@@ -154,142 +110,92 @@ const DriverLeafletMap = ({ driver, locations, setLocations, garbageDumps, activ
 
   // Track driver location using watchPosition (real-time)
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (user?.role !== 'driver') return;
 
-    // Initial location fetch and setup watch position
     const startWatchingLocation = () => {
       if (navigator.geolocation) {
-        // First get current position
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            const coords = {
-              lat: pos.coords.latitude,
-              lng: pos.coords.longitude,
-            };
-            setLocation(coords);
-            
-            const locationData = {
-              driverId: driver?.id || 'driver',
-              lat: coords.lat,
-              lng: coords.lng,
-              timestamp: new Date().toISOString()
-            };
-            
-            if (socket) {
-              socket.emit('driver-location', locationData);
-            }
-
-            if (driverMarkerRef.current && mapRef.current) {
-              driverMarkerRef.current.setLatLng([coords.lat, coords.lng]);
-              driverMarkerRef.current.getPopup()?.setContent(`
-                <b>🚛 Driver Location</b><br/>
-                Last updated: ${new Date().toLocaleTimeString()}<br/>
-              `);
-            } else if (mapRef.current) {
-              driverMarkerRef.current = L.marker([coords.lat, coords.lng], { 
-                icon: redIcon 
-              })
-                .addTo(mapRef.current)
-                .bindPopup(`
-                  <b>🚛 Driver Location</b><br/>
-                  Last updated: ${new Date().toLocaleTimeString()}<br/>
-                `)
-                .openPopup();
-            }
-
-            if (mapRef.current && !isZooming && !polylineRef.current && !localStorage.getItem('manualZoom')) {
-              setIsZooming(true);
-              mapRef.current.flyTo([coords.lat, coords.lng], 15, {
-                duration: 1,
-                onEnd: () => setIsZooming(false)
-              });
-            }
-          },
-          (err) => {
-            console.error('Geolocation error:', err);
-            showNotification('Unable to get your location. Please enable GPS.', 'error');
-            const defaultCoords = { lat: 20.59, lng: 78.96 };
-            setLocation(defaultCoords);
-            if (socket) {
-              socket.emit('driver-location', {
-                driverId: driver?.id || 'driver',
-                lat: defaultCoords.lat,
-                lng: defaultCoords.lng,
-                timestamp: new Date().toISOString()
-              });
-            }
-            
-            if (mapRef.current && !driverMarkerRef.current) {
-              driverMarkerRef.current = L.marker([defaultCoords.lat, defaultCoords.lng], { 
-                icon: redIcon 
-              })
-                .addTo(mapRef.current)
-                .bindPopup('<b>🚛 Driver Location (Approximate)</b>');
-            }
-          },
-          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-        );
-
-        // Then watch for continuous updates
+        // Use watchPosition for continuous tracking
         const watchId = navigator.geolocation.watchPosition(
-          (pos) => {
-            const coords = {
-              lat: pos.coords.latitude,
-              lng: pos.coords.longitude,
-            };
-            setLocation(coords);
-            
-            const locationData = {
-              driverId: driver?.id || 'driver',
-              lat: coords.lat,
-              lng: coords.lng,
-              timestamp: new Date().toISOString()
-            };
-            
-            if (socket) {
-              socket.emit('driver-location', locationData);
-            }
+          (position) => {
+            hasLoggedError.current = false;
 
-            if (driverMarkerRef.current && mapRef.current) {
-              driverMarkerRef.current.setLatLng([coords.lat, coords.lng]);
-              driverMarkerRef.current.getPopup()?.setContent(`
-                <b>🚛 Driver Location</b><br/>
-                Last updated: ${new Date().toLocaleTimeString()}<br/>
-              `);
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            setMyLocation({ lat, lng });
+            
+            // Send location to socket immediately when changed
+            emitLocationUpdate({lat, lng});
+          },
+          (error) => {
+            if (!hasLoggedError.current) {
+              console.error("Geolocation error:", error.message);
+              hasLoggedError.current = true;
             }
+            // Set default location if geolocation fails
+            const lat = 25.4745;
+            const lng = 81.8787;
+            setMyLocation({ lat, lng });
           },
-          (err) => {
-            console.error('Geolocation watch error:', err);
-          },
-          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+          {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0,
+          }
         );
         
         locationWatchIdRef.current = watchId;
         return watchId;
-      } else {
-        showNotification('Geolocation is not supported by your browser', 'error');
-        const defaultCoords = { lat: 20.59, lng: 78.96 };
-        setLocation(defaultCoords);
-        
-        if (mapRef.current && !driverMarkerRef.current) {
-          driverMarkerRef.current = L.marker([defaultCoords.lat, defaultCoords.lng], { 
-            icon: redIcon 
-          })
-            .addTo(mapRef.current)
-            .bindPopup('<b>🚛 Driver Location (Default)</b>');
-        }
       }
       return null;
     };
 
     startWatchingLocation();
-    
+
     return () => {
       if (locationWatchIdRef.current !== null) {
         navigator.geolocation.clearWatch(locationWatchIdRef.current);
       }
     };
-  }, [isZooming, driver?.id]);
+  }, [user]);
+
+  useEffect(() => {
+    if (!mapRef.current || !myLocation) return;
+
+    if (!driverMarkerRef.current) {
+      driverMarkerRef.current = L.marker(
+        [myLocation.lat, myLocation.lng],
+        { icon: redIcon }
+      )
+        .addTo(mapRef.current)
+        .bindPopup(`
+          <div style="text-align:center">
+            <strong>🚛 Your Current Location</strong><br/>
+            Latitude: ${myLocation.lat.toFixed(6)}<br/>
+            Longitude: ${myLocation.lng.toFixed(6)}
+          </div>
+        `)
+        .openPopup();
+
+      mapRef.current.setView(
+        [myLocation.lat, myLocation.lng],
+        15,
+        {
+          animate: true,
+          duration: 0.5
+        }
+      );
+    } else {
+      driverMarkerRef.current
+        .setLatLng([myLocation.lat, myLocation.lng])
+        .setPopupContent(`
+          <div style="text-align:center">
+            <strong>🚛 Your Current Location</strong><br/>
+            Latitude: ${myLocation.lat.toFixed(6)}<br/>
+            Longitude: ${myLocation.lng.toFixed(6)}
+          </div>
+        `);
+    }
+  }, [myLocation]);
 
   // Clear all route elements
   const clearRouteElements = () => {
@@ -312,43 +218,27 @@ const DriverLeafletMap = ({ driver, locations, setLocations, garbageDumps, activ
       mapRef.current.removeLayer(endMarkerRef.current);
       endMarkerRef.current = null;
     }
-    
-    localStorage.removeItem('manualZoom');
   };
 
   const clearRoute = () => {
     clearRouteElements();
-    showNotification('Route cleared', 'info');
   };
 
   useEffect(() => {
     clearRouteElements();
-  }, [locations]);
+  }, [pickupLocations]);
 
   const completePickup = async (pickupId, pickupLocation) => {
-    if (socket && window.confirm(`Mark this pickup as completed?\n\nLocation: ${pickupLocation?.name || pickupLocation?.locationName || 'Pickup Location'}`)) {
+    if (window.confirm(`Mark this pickup as completed?\n\nLocation: ${pickupLocation?.name || pickupLocation?.locationName || 'Pickup Location'}`)) {
       
-      try {
-        const response = await deactivateLocation(pickupId);
-        if (response.success) {
-          if (setLocations) {
-            setLocations(prev => prev.filter(loc => loc.id !== pickupId && loc._id !== pickupId));
-          }
-        } else {
-          console.error('Failed to deactivate location:', response.status);
-        }
-      } catch (error) {
-        console.error('Failed to deactivate location:', error);
-      }
-      
-      socket.emit('complete-pickup', pickupId);
-      setCompletedPickups(prev => [...prev, { ...pickupLocation, completedAt: new Date().toISOString() }]);
+      const response = await deactivateLocation(pickupId);
+
+      if (!response.success) {
+        console.error("Failed");
+        return;
+      } 
+
       clearRouteElements();
-      showNotification('✅ Garbage pickup completed successfully!', 'success');
-      
-      setTimeout(() => {
-        setCompletedPickups(prev => prev.filter(p => p.id !== pickupId));
-      }, 5000);
     }
   };
 
@@ -396,16 +286,12 @@ const DriverLeafletMap = ({ driver, locations, setLocations, garbageDumps, activ
         if (pickupLocation) {
           endMarkerRef.current.options.pickupId = pickupLocation.id;
         }
-
-        localStorage.setItem('manualZoom', 'true');
-        
-        setIsZooming(true);
+      
         const bounds = L.latLngBounds(coordinates);
         mapRef.current.fitBounds(bounds, { 
-          padding: [50, 50],
+          padding: [100, 100],
           maxZoom: 15,
           duration: 1,
-          onEnd: () => setIsZooming(false)
         });
 
         const distance = (route.distance / 1000).toFixed(1);
@@ -483,7 +369,6 @@ const DriverLeafletMap = ({ driver, locations, setLocations, garbageDumps, activ
             L.DomEvent.on(container.querySelector('#clear-route-btn'), 'click', (e) => {
               L.DomEvent.stopPropagation(e);
               clearRouteElements();
-              showNotification('Route cleared', 'info');
             });
             
             if (pickupLocation) {
@@ -500,16 +385,11 @@ const DriverLeafletMap = ({ driver, locations, setLocations, garbageDumps, activ
 
         routeInfoControlRef.current = new RouteInfoControl({ position: 'bottomleft' });
         routeInfoControlRef.current.addTo(mapRef.current);
-        
-        showNotification(`Route calculated: ${distance} km, ${duration} minutes`, 'success');
-
       } else {
         throw new Error('No route found');
       }
     } catch (error) {
       console.error('Error calculating route:', error);
-      showNotification('Failed to calculate route. Using straight line.', 'warning');
-      
       const coordinates = [[startLat, startLng], [endLat, endLng]];
       polylineRef.current = L.polyline(coordinates, {
         color: '#dc2626',
@@ -595,7 +475,7 @@ const DriverLeafletMap = ({ driver, locations, setLocations, garbageDumps, activ
 
     const garbageData = garbageDumps?.data || [];
 
-    garbageData.forEach((dump, index) => {
+    garbageData.forEach((dump) => {
       const lat = dump.lat || dump.latitude;
       const lng = dump.long || dump.lng || dump.longitude;
       
@@ -616,17 +496,15 @@ const DriverLeafletMap = ({ driver, locations, setLocations, garbageDumps, activ
       });
 
       marker.on('click', () => {
-        if (location) {
-          calculateRoute(location.lat, location.lng, parseFloat(lat), parseFloat(lng), null);
-        } else {
-          showNotification('Please wait for location to load', 'warning');
+        if (myLocation) {
+          calculateRoute(myLocation.lat, myLocation.lng, parseFloat(lat), parseFloat(lng), null);
         }
       });
 
       garbageMarkersRef.current.push(marker);
     });
     
-  }, [garbageDumps, location]);
+  }, [garbageDumps, myLocation]);
 
   const uniquePickupLocations = Array.from(
     new Map(pickupLocations.map((l) => [l.id, l])).values()
@@ -644,7 +522,7 @@ const DriverLeafletMap = ({ driver, locations, setLocations, garbageDumps, activ
     });
     userMarkersRef.current = [];
 
-    pickupLocations.forEach((loc, index) => {
+    pickupLocations.forEach((loc) => {
       const lat = loc.lat;
       const lng = loc.long || loc.lng;
       
@@ -665,22 +543,20 @@ const DriverLeafletMap = ({ driver, locations, setLocations, garbageDumps, activ
       });
 
       marker.on('click', () => {
-        if (location) {
-          calculateRoute(location.lat, location.lng, parseFloat(lat), parseFloat(lng), {
+        if (myLocation) {
+          calculateRoute(myLocation.lat, myLocation.lng, parseFloat(lat), parseFloat(lng), {
             id: loc.id,
             name: loc.name || loc.locationName,
             userId: loc.userId,
             ...loc
           });
-        } else {
-          showNotification('Please wait for location to load', 'warning');
         }
       });
 
       userMarkersRef.current.push(marker);
     });
     
-  }, [location, pickupLocations, completedPickups]);
+  }, [myLocation, pickupLocations]);
 
   // Cleanup on component unmount
   useEffect(() => {
@@ -706,10 +582,10 @@ const DriverLeafletMap = ({ driver, locations, setLocations, garbageDumps, activ
     <div className="p-4 h-full flex flex-col">
       <div className="mb-4 flex justify-between items-center flex-wrap gap-2">
         <div className="text-gray-700">
-          {location ? (
+          {myLocation ? (
             <>
               <span className="font-semibold">🚛 Driver Location:</span> 
-              {' '}{location.lat.toFixed(6)}, {location.lng.toFixed(6)}
+              {' '}{myLocation.lat.toFixed(6)}, {myLocation.lng.toFixed(6)}
             </>
           ) : (
             <span className="text-yellow-600">📍 Fetching location...</span>
@@ -729,7 +605,7 @@ const DriverLeafletMap = ({ driver, locations, setLocations, garbageDumps, activ
         </div>
       </div>
       
-      <div className="mb-4 grid grid-cols-3 gap-3">
+      <div className="mb-4 grid grid-cols-2 gap-3">
         <div className="bg-blue-50 rounded-lg p-3 text-center">
           <div className="text-2xl font-bold text-blue-600">{uniquePickupLocations.length}</div>
           <div className="text-xs text-gray-600">Active Pickups</div>
@@ -737,10 +613,6 @@ const DriverLeafletMap = ({ driver, locations, setLocations, garbageDumps, activ
         <div className="bg-green-50 rounded-lg p-3 text-center">
           <div className="text-2xl font-bold text-green-600">{garbageDumps?.data?.length || 0}</div>
           <div className="text-xs text-gray-600">Garbage Dumps</div>
-        </div>
-        <div className="bg-purple-50 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-purple-600">{completedPickups.length}</div>
-          <div className="text-xs text-gray-600">Completed Today</div>
         </div>
       </div>
       
@@ -783,8 +655,8 @@ const DriverLeafletMap = ({ driver, locations, setLocations, garbageDumps, activ
             <p>• Click on any <span className="text-blue-600 font-semibold">blue marker</span> to see route to garbage dump</p>
             <p>• After collecting garbage, click "Complete Pickup" to remove it from map</p>
             <p>• New pickup requests appear automatically - no refresh needed!</p>
-            {uniquePickupLocations.length > 0 && (
-              <p className="text-green-600 mt-1">✨ {uniquePickupLocations.length} active pickup request(s) waiting!</p>
+            {pickupLocations.length > 0 && (
+              <p className="text-green-600 mt-1">✨ {pickupLocations.length} active pickup request(s) waiting!</p>
             )}
             {(!garbageDumps?.data || garbageDumps.data.length === 0) && (
               <p className="text-red-600 mt-1">⚠️ No garbage dumps found in database. Please add some garbage locations.</p>

@@ -83,7 +83,6 @@ const MapContainer = styled(Paper)(({ theme }) => ({
    Main Component
 ======================= */
 function Integrate({ garbageDumps }) {
-  const [selectedLocation, setSelectedLocation] = useState(null);
   const navigate = useNavigate();
 
   const dispatch = useDispatch();
@@ -139,8 +138,6 @@ function Integrate({ garbageDumps }) {
       {/* ===== MAP ===== */}
       <MapContainer elevation={4}>
         <LeafletMap
-          selectedLocation={selectedLocation}
-          onMapClick={setSelectedLocation}
           garbageDumps={garbageDumps}
         />
       </MapContainer>

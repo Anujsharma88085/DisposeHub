@@ -10,13 +10,20 @@ import Email from '../utils/email.js';
 
 /* ================= TOKEN HELPERS ================= */
 
-const signToken = (id) =>
-  jwt.sign({ id }, process.env.JWT_SECRET, {
+const signToken = (user) =>
+  jwt.sign(
+    {
+      id: user._id,
+      role: user.role,
+    },
+    process.env.JWT_SECRET,
+    {
     expiresIn: process.env.JWT_EXPIRES_IN,
-  });
+    }
+  );
 
 const sendJwtCookie = (user, res) => {
-  const token = signToken(user._id);
+  const token = signToken(user);
 
   const cookieOptions = {
     expires: new Date(
@@ -69,12 +76,12 @@ export const signup = catchAsync(async (req, res, next) => {
     );
   }
 
-  // const existingUser = await User.findOne({ email });
-  // if (existingUser) {
-  //   return next(
-  //     new AppError("Email is already registered", 400, "email")
-  //   );
-  // }
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    return next(
+      new AppError("Email is already registered", 400, "email")
+    );
+  }
 
   const newUser = await User.create({
     name,

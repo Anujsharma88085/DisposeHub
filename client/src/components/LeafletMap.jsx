@@ -8,7 +8,9 @@ import { getSocket } from "../socket/socket";
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-import { savePickupLocation, getUserActiveLocation, deactivateLocation } from '../apis/garbageApi';
+import { savePickupLocation, getUserActiveLocation, deactivateLocation, cancelLocation } from '../apis/garbageApi';
+import { registerPickupListeners } from '../socket/listeners';
+import { emitLocationUpdate } from '../socket/emitters';
 
 delete L.Icon.Default.prototype._getIconUrl;
 
@@ -131,17 +133,35 @@ const CurrentLocationButton = () => {
   return null;
 };
 
-const LeafletMap = ({ selectedLocation, onMapClick, garbageDumps }) => {
+const LeafletMap = ({ garbageDumps }) => {
   const [myLocation, setMyLocation] = useState(null);
-  const [clickedLocation, setClickedLocation] = useState(null);
   const [pathPositions, setPathPositions] = useState([]);
   const [pickupLocations, setPickupLocations] = useState([]);
   const [connectionStatus, setConnectionStatus] = useState('connecting');
   const [isLoadingExisting, setIsLoadingExisting] = useState(true);
   const mapRef = useRef(null);
+  const markerRefs = useRef({});
   const locationWatchIdRef = useRef(null);
+  const hasLoggedError = useRef(false);
 
   const user = useSelector((state) => state.auth.user);
+
+  const socket = getSocket();
+
+  useEffect(() => {
+    if (!socket) return;
+    const cleanup = registerPickupListeners(socket, {
+      onCompleted: ({ id }) => {
+        setPickupLocations(prev =>
+          prev.filter(loc => loc._id !== id)
+        );
+
+        alert("🎉 Your garbage has been collected!");
+      },
+    });
+
+    return cleanup;
+  }, [socket]);
 
   // Fetch user's existing active location from backend on page load
   useEffect(() => {
@@ -153,81 +173,19 @@ const LeafletMap = ({ selectedLocation, onMapClick, garbageDumps }) => {
       
       try {
         const userLocation = await getUserActiveLocation();
+        if(!userLocation) return;
+
         if (userLocation && userLocation.active) {
-          
-          const existingPickup = {
-            id: userLocation._id,
-            lat: userLocation.lat,
-            lng: userLocation.long,
-            long: userLocation.long,
-            name: userLocation.locationName,
-            locationName: userLocation.locationName,
-            userId: user?._id,
-            active: true,
-            timestamp: userLocation.createdAt || new Date().toISOString()
-          };
-          setPickupLocations([existingPickup]);
-          
-          setClickedLocation({
-            lat: userLocation.lat,
-            lng: userLocation.long,
-            locationName: userLocation.locationName,
-            id: userLocation._id,
-            active: true
-          });
-          
-          onMapClick({
-            lat: userLocation.lat,
-            lng: userLocation.long,
-            locationName: userLocation.locationName
-          });
+          setPickupLocations([userLocation]);
         }
       } catch (error) {
-        console.log('No existing active location found:', error.message);
+        console.log(error.message);
       } finally {
         setIsLoadingExisting(false);
       }
     };
     
     fetchUserActiveLocation();
-  }, [user, onMapClick]);
-
-  // socket logic 
-  useEffect(() => {
-    const socket = getSocket();
-    if (!socket) return;
-
-    const onNewPickup = (location) => {
-      setPickupLocations((prev) => {
-        if (prev.some((l) => l.id === location.id)) return prev;
-        return [location, ...prev];
-      });
-    };
-
-    const onPickupCompleted = (data) => {
-      setPickupLocations((prev) =>
-        prev.filter((loc) => loc.id !== data.pickupId)
-      );
-
-      setClickedLocation(null);
-      setPathPositions([]);
-    };
-
-    const onPickupRemoved = (pickupId) => {
-      setPickupLocations((prev) =>
-        prev.filter((loc) => loc.id !== pickupId)
-      );
-    };
-
-    socket.on("new-pickup-location", onNewPickup);
-    socket.on("pickup-completed", onPickupCompleted);
-    socket.on("pickup-location-removed", onPickupRemoved);
-
-    return () => {
-      socket.off("new-pickup-location", onNewPickup);
-      socket.off("pickup-completed", onPickupCompleted);
-      socket.off("pickup-location-removed", onPickupRemoved);
-    };
   }, [user]);
 
   // Get user's current location using watchPosition (real-time)
@@ -239,23 +197,20 @@ const LeafletMap = ({ selectedLocation, onMapClick, garbageDumps }) => {
         // Use watchPosition for continuous tracking
         const watchId = navigator.geolocation.watchPosition(
           (position) => {
+            hasLoggedError.current = false;
+
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
             setMyLocation({ lat, lng });
             
             // Send location to socket immediately when changed
-            if (socket) {
-              const locationData = {
-                userId: user?.id,
-                lat: lat,
-                lng: lng,
-                timestamp: new Date().toISOString()
-              };
-              socket.emit('location', locationData);
-            }
+            emitLocationUpdate({lat, lng});
           },
           (error) => {
-            console.error("Geolocation error:", error.message);
+            if (!hasLoggedError.current) {
+              console.error("Geolocation error:", error.message);
+              hasLoggedError.current = true;
+            }
             // Set default location if geolocation fails
             const lat = 25.4745;
             const lng = 81.8787;
@@ -281,29 +236,15 @@ const LeafletMap = ({ selectedLocation, onMapClick, garbageDumps }) => {
         navigator.geolocation.clearWatch(locationWatchIdRef.current);
       }
     };
-  }, [user, connectionStatus]);
-
-  useEffect(() => {
-    if (selectedLocation) {
-      setClickedLocation(selectedLocation);
-    }
-  }, [selectedLocation]);
-
-  const socket = getSocket();
+  }, [user]);
 
   const cancelPickup = async (pickupId) => {
-    if (socket && window.confirm('Are you sure you want to cancel this pickup request?')) {
+    if (window.confirm('Are you sure you want to cancel this pickup request?')) {
       try {
-        await deactivateLocation(pickupId);
+        await cancelLocation(pickupId);
+        setPickupLocations(prev => prev.filter(loc => loc._id !== pickupId));
       } catch (error) {
-        console.error('Failed to deactivate in backend:', error);
-      }
-      
-      socket.emit('cancel-pickup', pickupId);
-      setPickupLocations(prev => prev.filter(loc => loc.id !== pickupId));
-      if (clickedLocation && clickedLocation.id === pickupId) {
-        setClickedLocation(null);
-        setPathPositions([]);
+        alert(error.message);
       }
     }
   };
@@ -316,7 +257,7 @@ const LeafletMap = ({ selectedLocation, onMapClick, garbageDumps }) => {
     }
 
     // Check if user already has an active pickup
-    const userActivePickup = pickupLocations.find(loc => loc.userId === user?._id && loc.active);
+    const userActivePickup = pickupLocations.find(loc => loc.markedBy === user?._id && loc.active);
     
     if (userActivePickup) {
       const updateExisting = window.confirm(
@@ -346,51 +287,24 @@ const LeafletMap = ({ selectedLocation, onMapClick, garbageDumps }) => {
     );
 
     if (!confirmPickup) return;
+
     const location = { 
       lat, 
       lng, 
-      locationName, 
-      active: true,
-      id: userActivePickup?.id || Date.now(),
-      userId: user?._id
+      locationName,
     };
-
-    setClickedLocation(location);
-    onMapClick(location);
     
     try {
       const result = await savePickupLocation(location);
-      
+
       const savedLocation = result.location || result;
 
-      // Emit to socket for real-time driver update
-      if (socket) {
-        const pickupData = {
-          id: savedLocation._id || location.id,
-          lat: location.lat,
-          lng: location.lng,
-          long: location.lng,
-          name: location.locationName,
-          locationName: location.locationName,
-          userId: user?._id,
-          active: true,
-          timestamp: new Date().toISOString()
-        };
-        
-        socket.emit('new-pickup-location', pickupData);
-        
-        // Update local state - remove old and add new
-        setPickupLocations(prev => {
-          const filtered = prev.filter(loc => loc.userId !== user?._id);
-          return [...filtered];
-        });
+      setPickupLocations(prev => {
+        const filtered = prev.filter(loc => loc.markedBy !== user?._id);
+        return [...filtered,  savedLocation];
+      }); 
 
-        pickupLocations.push(pickupData);
-        
-        alert(`✅ Pickup location ${userActivePickup ? 'updated' : 'requested'} successfully! A driver will be assigned soon.`);
-      } else {
-        alert('⚠️ Pickup location saved but real-time updates are offline.');
-      }
+      alert(`✅ Pickup location ${userActivePickup ? 'updated' : 'requested'} successfully! A driver will be assigned soon`);
     } catch (error) {
       console.error("Failed to save pickup location:", error.message);
       alert('❌ Failed to save pickup location. Please try again.');
@@ -500,9 +414,9 @@ const LeafletMap = ({ selectedLocation, onMapClick, garbageDumps }) => {
         )}
 
         {/* Show the user's active pickup (should be only ONE) */}
-        {pickupLocations.filter(loc => loc.userId === user?._id && loc.active).map((location) => (
+        {pickupLocations.filter(loc => loc.markedBy === user?._id && loc.active).map((location) => (
           <Marker
-            key={`my-pickup-${location.id}`}
+            key={`my-pickup-${location._id}`}
             position={[location.lat, location.long || location.lng]}
             icon={userIcon('orange')}
           >
@@ -513,12 +427,12 @@ const LeafletMap = ({ selectedLocation, onMapClick, garbageDumps }) => {
                 <p className="text-xs text-gray-500 mb-3">
                   Status: <span className="text-green-600 font-semibold">Active</span>
                   <br />
-                  Requested: {new Date(location.timestamp).toLocaleString()}
+                  Requested: {new Date(location.updatedAt).toLocaleString()}
                 </p>
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
-                    cancelPickup(location.id);
+                    cancelPickup(location._id);
                   }}
                   className="w-full px-3 py-2 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600 transition"
                 >
@@ -529,28 +443,34 @@ const LeafletMap = ({ selectedLocation, onMapClick, garbageDumps }) => {
           </Marker>
         ))}
 
-        {selectedLocation && (
-          <RecenterMap lat={selectedLocation.lat} lng={selectedLocation.lng} />
-        )}
 
         {garbageDumps?.data?.map((dump, index) => (
           <Marker
             key={`dump-${index}`}
             position={[dump.lat, dump.long]}
             icon={greenIcon}
-            eventHandlers={{
-              click: () => {
-                handleMarkerClick(dump);
+            ref={(ref) => {
+              if (ref) {
+                markerRefs.current[dump._id] = ref;
               }
             }}
           >
-            <Popup>
+            <Popup >
               <div className="min-w-[150px]">
                 <strong className="block mb-2">🗑️ {dump.name || 'Garbage Dump'}</strong>
                 {dump.address && <p className="text-sm mb-2">{dump.address}</p>}
+                <button
+                  onClick={() => {
+                    setPathPositions([]);
+                    markerRefs.current[dump._id]?.closePopup();
+                  }}
+                  className="w-full px-3 py-1 bg-red-500 text-white rounded text-sm cursor-pointer"
+                >
+                  Clear Route
+                </button>
                 <button 
                   onClick={() => handleMarkerClick(dump)}
-                  className="w-full px-3 py-1 bg-blue-500 text-white rounded text-sm"
+                  className="w-full mt-1 px-3 py-1 bg-blue-500 text-white rounded text-sm cursor-pointer"
                 >
                   Show Route
                 </button>
@@ -564,11 +484,7 @@ const LeafletMap = ({ selectedLocation, onMapClick, garbageDumps }) => {
         <div className="flex items-center space-x-3 mb-2">
           <div className="w-3 h-3 bg-red-500 rounded-full"></div>
           <span>Your Location</span>
-        </div>
-        <div className="flex items-center space-x-3 mb-2">
-          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-          <span>Driver Location (Live)</span>
-        </div>
+        </div>        
         <div className="flex items-center space-x-3 mb-2">
           <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
           <span>Your Active Pickup</span>

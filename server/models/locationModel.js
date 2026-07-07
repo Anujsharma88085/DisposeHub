@@ -27,6 +27,15 @@ const locationSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  status: {
+    type: String,
+    enum: [
+      "ACTIVE",
+      "COMPLETED",
+      "CANCELLED",
+    ],
+    default: "ACTIVE",
+  },
 }, {
   timestamps: true,
 });

@@ -11,7 +11,7 @@ const api = axios.create({
 // save pickup location
 export const savePickupLocation = async (location) => {
   try {
-    const response = await api.post("/api/v1/location/save", location);
+    const response = await api.post("/api/v1/locations/save", location);
 
     return response.data;
   } catch (error) {
@@ -24,7 +24,7 @@ export const savePickupLocation = async (location) => {
 // get active locations
 export const getActiveLocations = async () => {
   try {
-    const res = await api.get("/api/v1/location/active-locations");
+    const res = await api.get("/api/v1/locations/active-locations");
 
     return res.data.locations || [];
   } catch (error) {
@@ -36,7 +36,7 @@ export const getActiveLocations = async () => {
 
 export const getUserActiveLocation = async () => {
   try {
-    const res = await api.get("/api/v1/location/my-active-location");
+    const res = await api.get("/api/v1/locations/my-active-location");
     return res.data.location || null;
   } catch (error) {
     if (error.response?.status === 404) {
@@ -61,13 +61,24 @@ export const getAllGarbageDumps = async () => {
 
 export const deactivateLocation = async (id) => {
   try {
-    const res = await api.patch(`/api/v1/location/${id}/deactivate`, {
+    const res = await api.patch(`/api/v1/locations/${id}/deactivate`, {
       active: false,
     });
     return res.data;
   } catch (error) {
     throw new Error(
       error.response?.data?.message || "Failed to deactivate location"
+    );
+  }
+};
+
+export const cancelLocation = async (id) => {
+  try {
+    const res = await api.patch(`/api/v1/locations/${id}/cancel`);
+    return res.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.message || "Failed to cancel location"
     );
   }
 };

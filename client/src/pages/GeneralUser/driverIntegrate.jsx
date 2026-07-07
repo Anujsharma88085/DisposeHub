@@ -3,7 +3,7 @@ import DriverLeafletMap from '../../components/driverLeaflet';
 import DriverNavbar from '../../components/navbarDriver';
 import { getActiveLocations } from '../../apis/garbageApi';
 
-const DriverIntegrate = ({ driver, garbageDumps }) => {
+const DriverIntegrate = ({ garbageDumps }) => {
   const [locations, setLocations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -13,13 +13,13 @@ const DriverIntegrate = ({ driver, garbageDumps }) => {
       const named = (locationsData || []).map((loc) => ({
         ...loc,
         id: loc._id,
-        name: loc.locationName || 'Unnamed Garbage',
+        locationName: loc.locationName || 'Unnamed Garbage',
         lat: loc.lat,
         long: loc.long,
         lng: loc.long,
         active: loc.active,
         userId: loc.markedBy,
-        timestamp: loc.createdAt
+        updatedAt: loc.updatedAt
       }));
       setLocations(named);
     } catch (err) {
@@ -31,10 +31,6 @@ const DriverIntegrate = ({ driver, garbageDumps }) => {
 
   useEffect(() => {
     fetchLocations();
-    
-    const interval = setInterval(fetchLocations, 120000);
-    
-    return () => clearInterval(interval);
   }, []);
 
   if (isLoading) {
@@ -58,11 +54,9 @@ const DriverIntegrate = ({ driver, garbageDumps }) => {
       {/* Right Side - Map */}
       <div className="flex-1 h-full overflow-hidden">
         <DriverLeafletMap 
-          driver={driver} 
-          locations={locations} 
-          setLocations={setLocations}
+          pickupLocations={locations} 
+          setPickupLocations={setLocations}
           garbageDumps={garbageDumps}
-          activePickupLocations={locations}
         />
       </div>
     </div>

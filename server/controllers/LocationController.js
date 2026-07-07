@@ -4,15 +4,18 @@ import Location from "../models/locationModel.js";
 import User from "../models/userModel.js";
 import Notification from "../models/notificationModel.js";
 import Transaction from "../models/transactionModel.js";
+import {
+  emitPickupCreated,
+  emitPickupUpdated,
+  emitPickupCancelled,
+  emitPickupCompleted,
+  emitNotification,
+} from "../socket/services/socketEmitter.js";
 
 
 export const getMyActiveLocation = catchAsync(async (req, res, next) => {
   const userId = req.user._id;
   const location = await Location.findOne({ markedBy: userId, active: true });
-  
-  if (!location) {
-    return next(new AppError("No active location found", 404));
-  }
   
   res.status(200).json({
     success: true,
@@ -22,32 +25,77 @@ export const getMyActiveLocation = catchAsync(async (req, res, next) => {
 
 export const saveLocation = catchAsync(async (req, res, next) => {
   const userId = req.user._id;
-  const { lat, lng, locationName, active } = req.body;
+  const { lat, lng, locationName } = req.body;
 
-  if (lat === undefined || lng === undefined || active === undefined) {
+  if (lat === undefined || lng === undefined) {
     return next(new AppError("Missing required fields", 400));
   }
 
-  const location = await Location.findOneAndUpdate(
-    { markedBy: userId },
-    {
+  const existingLocation = await Location.findOne({
+    markedBy: userId,
+    active: true,
+  });
+
+  let location;
+
+  if (existingLocation) {
+    existingLocation.lat = lat;
+    existingLocation.long = lng;
+    existingLocation.locationName = locationName;
+
+    location = await existingLocation.save();
+
+    emitPickupUpdated(location);
+  } else {
+    location = await Location.create({
+      markedBy: userId,
       lat,
       long: lng,
       locationName,
-      active,
-      markedBy: userId,
-    },
-    {
-      new: true,
-      upsert: true,
-      runValidators: true,
-    }
-  );
-
+      active: true,
+    });
+    emitPickupCreated(location);
+  }
+  
   res.status(201).json({
     success: true,
     message: "Garbage location marked successfully",
     location,
+  });
+});
+
+export const cancelLocation = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  const userId = req.user._id;
+
+  const location = await Location.findById(id);
+
+  if (!location) {
+    return next(new AppError("Location not found.", 404));
+  }
+
+  // Ensure the user owns this pickup
+  if (location.markedBy.toString() !== userId.toString()) {
+    return next(
+      new AppError("You are not allowed to cancel this pickup.", 403)
+    );
+  }
+
+  if (!location.active) {
+    return next(
+      new AppError("Pickup is already inactive.", 400)
+    );
+  }
+
+  location.active = false;
+  location.status = "CANCELLED";
+  await location.save();
+
+  emitPickupCancelled(location);
+
+  res.status(200).json({
+    success: true,
+    message: "Pickup cancelled successfully.",
   });
 });
 
@@ -79,6 +127,7 @@ export const deactivateLocation = catchAsync(async (req, res, next) => {
   // 2. Deactivate location
   location.active = false;
   location.pickedBy = driverId;
+  location.status = "COMPLETED";
   await location.save();
 
   // ===== Rewards Config =====
@@ -121,7 +170,8 @@ export const deactivateLocation = catchAsync(async (req, res, next) => {
   }
 
   // 5. Notifications
-  await Notification.insertMany([
+  const [driverNotification, userNotification] = 
+    await Notification.insertMany([
     {
       receiver: driverId,
       messagePreview: `You earned ${DRIVER_POINT_REWARD} points and ₹${DRIVER_WALLET_REWARD}. Wallet balance: ₹${driver.walletBalance}`,
@@ -133,6 +183,9 @@ export const deactivateLocation = catchAsync(async (req, res, next) => {
       isRead: false,
     },
   ]);
+
+  emitNotification(driverId.toString(), driverNotification);
+  emitNotification(user._id.toString(), userNotification);
 
   // 6. Transactions
   await Transaction.create([
@@ -151,6 +204,8 @@ export const deactivateLocation = catchAsync(async (req, res, next) => {
       description: "Reward for reporting garbage",
     },
   ]);
+
+  emitPickupCompleted(location);
 
   res.status(200).json({
     success: true,
