@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { FaEdit } from "react-icons/fa";
-import { getMe } from "../../apis/userApi";
 import { Card, CardContent, Typography, Box } from "@mui/material";
 import { useSpring, animated, config } from "react-spring";
 import styled, { keyframes } from "styled-components";
+import defaultProfile from "../../assets/images/default-profile.jpg";
 
 const fall = keyframes`
   0% {
@@ -72,38 +73,8 @@ const Tree = styled.div`
 export default function UserProfile() {
   
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchUser = async () => {
-    try {
-      const userData = await getMe();
-      if(userData)
-        setUser(userData);
-    } catch (error) {
-      console.error(error);
-
-      // If unauthorized → go to login
-      if (error?.response?.status === 401) {
-        navigate("/login");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-  useEffect(() => {
-    fetchUser();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-white">
-        <p className="text-lg animate-pulse">Loading profile...</p>
-      </div>
-    );
-  }
+  
+  const user = useSelector((state) => state.auth.user);
 
   if (!user) {
     return (
@@ -113,7 +84,7 @@ export default function UserProfile() {
         </p>
         <button
           onClick={() => navigate("/login")}
-          className="px-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-black font-semibold"
+          className="px-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-black font-semibold cursor-pointer"
         >
           Go to Login
         </button>
@@ -121,7 +92,6 @@ export default function UserProfile() {
     );
   }
 
-  // Generate falling coins with random properties
   const generateCoins = () => {
     const coins = [];
     const coinImages = [
@@ -149,7 +119,6 @@ export default function UserProfile() {
     return coins;
   };
 
-  // Tree growing animation based on points
   const GrowingTree = () => {
     const points = user?.points || 0;
     let treeSize = '60px';
@@ -177,7 +146,7 @@ export default function UserProfile() {
 
         {/* Edit Button */}
         <button
-          onClick={() => navigate("/editProfile", { state: { user } })}
+          onClick={() => navigate("/editProfile")}
           className="absolute top-5 right-5 p-3 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition shadow-lg hover:shadow-purple-500/50 z-10 cursor-pointer"
         >
           <FaEdit size={18} />
@@ -187,7 +156,7 @@ export default function UserProfile() {
         <div className="flex flex-col items-center">
           <div className="w-36 h-36 rounded-full overflow-hidden border-4 border-purple-400 shadow-[0_0_25px_rgba(156,39,176,0.6)]">
             <img
-              src={user?.profilePicture || "/cop.jpg"}
+              src={user?.profilePicture || defaultProfile}
               alt="Profile"
               className="w-full h-full object-cover object-center scale-150"
             />

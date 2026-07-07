@@ -47,8 +47,10 @@ const userSchema = new mongoose.Schema({
     }
   },
 
-  avatar: String,
-  profilePicture: String,
+  profilePicture: {
+    type: String,
+    default: ""
+  },
 
   role: {
     type: String,

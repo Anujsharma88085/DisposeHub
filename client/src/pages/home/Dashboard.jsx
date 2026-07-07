@@ -8,6 +8,7 @@ import Avatar from "@mui/material/Avatar";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { deepPurple } from "@mui/material/colors";
+import defaultProfile from "../../assets/images/default-profile.jpg";
 
 export default function UserDashboard() {
   const user = useSelector((state) => state.auth.user);
@@ -35,7 +36,7 @@ export default function UserDashboard() {
           <div className="flex flex-col items-center">
             <div className="w-36 h-36 rounded-full overflow-hidden border-4 border-purple-400 shadow-[0_0_25px_rgba(156,39,176,0.6)]">
               <img
-                src={user?.profilePicture || "/cop.jpg"}
+                src={user?.profilePicture || defaultProfile}
                 alt="Profile"
                 className="w-full h-full object-cover object-center scale-150"
               />
@@ -207,7 +208,7 @@ export default function UserDashboard() {
         <div className="flex flex-col items-center">
           <div className="w-36 h-36 rounded-full overflow-hidden border-4 border-purple-400 shadow-[0_0_25px_rgba(156,39,176,0.6)]">
             <img
-              src={user?.profilePicture || "/cop.jpg"}
+              src={user?.profilePicture || defaultProfile}
               alt="Profile"
               className="w-full h-full object-cover object-center scale-150"
             />

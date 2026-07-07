@@ -13,7 +13,7 @@ export const getMe = (req, res, next) => {
 
 export const updateUser = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
     const { name, vehicleNumber } = req.body;
 
     const user = await User.findOne({ _id : userId });
@@ -23,7 +23,7 @@ export const updateUser = async (req, res) => {
     }
 
     user.name = name || user.name;
-    user.vehicleNumber=vehicleNumber||user.vehicleNumber
+    user.vehicleNumber = vehicleNumber || user.vehicleNumber
     await user.save();
 
     res.status(200).json({ success: true, message: "User updated successfully", user });
@@ -73,7 +73,9 @@ export const uploadProfilePhoto = catchAsync(async (req, res, next) => {
     });
   }
 
-  const result = await cloudinary.uploader.upload(req.file.path);
+  const result = await cloudinary.uploader.upload(req.file.path, {
+    folder: "disposehub/profile-pictures",
+  });
 
   fs.unlinkSync(req.file.path);
 

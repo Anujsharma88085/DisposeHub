@@ -1,37 +1,45 @@
-import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
 import {uploadProfilePicture, updateUserProfile } from "../../apis/userApi";
-import { useDispatch } from "react-redux";
 import { updateUser } from "../../redux/slices/authSlice";
+import defaultProfile from "../../assets/images/default-profile.jpg";
+import { useSelector, useDispatch } from "react-redux";
 
 export default function EditUserProfile() {
-  const location = useLocation();
   const navigate = useNavigate();
 
   const dispatch = useDispatch();
 
+  const currentUser = useSelector((state) => state.auth.user);
+
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-
-  const [user, setUser] = useState({
-    name: location.state?.user?.name || "",
-    email: location.state?.user?.email || "",
-    role: location.state?.user?.role || "",
-    profilePicture: location.state?.user?.profilePicture || "",
+  const [editedUser, setEditedUser] = useState({
+    name: currentUser.name,
+    profilePicture: currentUser.profilePicture,
+    vehicleNumber: currentUser.vehicleNumber || "",
   });
 
-  const [editedUser, setEditedUser] = useState(user);
+  useEffect(() => {
+    setEditedUser({
+      name: currentUser.name,
+      vehicleNumber: currentUser.vehicleNumber || "",
+      profilePicture: currentUser.profilePicture,
+    });
+  }, [currentUser]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setEditedUser({ ...editedUser, [name]: value });
+    setEditedUser((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) {
-      alert("Please select a file to upload.");
       return;
     }
 
@@ -39,13 +47,16 @@ export default function EditUserProfile() {
       setUploading(true);
       const data = await uploadProfilePicture(file);
 
-      setEditedUser((prev) => ({
-        ...prev,
-        profilePicture: data.data.profilePicture + "?t=" + new Date().getTime(),
-      }));
+      dispatch(
+        updateUser({
+          ...currentUser,
+          profilePicture: data.profilePicture,
+        })
+      );
     } catch (error) {
       console.error("Upload error:", error.message);
     } finally {
+      e.target.value = "";
       setUploading(false);
     }
   };
@@ -54,8 +65,7 @@ export default function EditUserProfile() {
     setLoading(true);
     try {
       const updatedData = await updateUserProfile(editedUser);
-      
-      dispatch(updateUser(updatedData.user || editedUser));
+      dispatch(updateUser(updatedData.user));
       setTimeout(() => navigate("/profile"), 1000);
     } catch (error) {
       console.log("Error:", error.message);
@@ -77,7 +87,7 @@ export default function EditUserProfile() {
               </div>
             ) : (
               <img
-                src={editedUser.profilePicture || "/default-avatar.png"}
+                src={editedUser.profilePicture || defaultProfile }
                 alt="Profile"
                 className="w-full h-full object-cover object-center scale-150"
               />
@@ -111,19 +121,15 @@ export default function EditUserProfile() {
             className="w-full p-3 text-lg border rounded-lg bg-black/20 border-cyan-500 text-cyan-300 focus:ring-2 focus:ring-cyan-500 outline-none transition-all duration-200"
           />
 
-          
-
-          {editedUser.role === "driver" && (
-           
-              <input
-                type="text"
-                name="VehicleNumber"
-                value={editedUser.VehicleNumber}
-                onChange={handleChange}
-                placeholder="Vehicle Name"
-                className="w-full p-3 text-lg border rounded-lg bg-black/20 border-cyan-500 text-cyan-300 focus:ring-2 focus:ring-cyan-500 outline-none transition-all duration-200"
-              />
-           
+          {currentUser.role === "driver" && (
+            <input
+              type="text"
+              name="vehicleNumber"
+              value={editedUser.vehicleNumber}
+              onChange={handleChange}
+              placeholder="Vehicle Name"
+              className="w-full p-3 text-lg border rounded-lg bg-black/20 border-cyan-500 text-cyan-300 focus:ring-2 focus:ring-cyan-500 outline-none transition-all duration-200"
+            />
           )}
         </div>
 

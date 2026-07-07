@@ -9,6 +9,7 @@ yarn-error.log*
 node_modules/
 server/node_modules/
 client/node_modules/
+server/uploads/
 
 # Build & Dist files
 server/dist/
@@ -16,10 +17,12 @@ client/build/
 client/.next/
 client/out/
 server/package-lock.json
+
 # Environment & Configuration Files
 server/.env
 server/config.env
 client/.env
+client/config.env
 .env.local
 .env.development.local
 .env.production.local
@@ -39,8 +42,6 @@ Thumbs.db
 # Miscellaneous
 *.bak
 *.tmp
-
-package-lock.json
 
 
 
