@@ -5,7 +5,7 @@ import { FaEdit } from "react-icons/fa";
 import { Card, CardContent, Typography, Box } from "@mui/material";
 import { useSpring, animated, config } from "react-spring";
 import styled, { keyframes } from "styled-components";
-import defaultProfile from "../../assets/images/default-profile.jpg";
+import defaultProfile from "../../assets/images/default-profile.png";
 
 const fall = keyframes`
   0% {

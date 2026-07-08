@@ -88,13 +88,18 @@ function App() {
           <Route path="/reset-password/:token" element={<ResetPassword />} />
         </Route>
 
+        <Route element={<ProtectedRoute allowedRoles={["user", "driver", "admin"]} />}>
+          <Route element={<AppLayout />}>
+            <Route path="/editProfile" element={<EditUserProfile />} />
+          </Route>
+        </Route>
+
         {/* user + driver */}
         <Route element={<ProtectedRoute allowedRoles={["user", "driver"]} />}>
           <Route element={<AppLayout />}>
             <Route path="/map" element={<Integrate garbageDumps={garbageDumps} />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/editProfile" element={<EditUserProfile />} />
             <Route path="/profile" element={<UserProfile />} />
             <Route path="/withdrawl-money" element={<Wallet />} />
             <Route path="/contact-us" element={<ContactUsPage />} />

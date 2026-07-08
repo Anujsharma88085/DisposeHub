@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FaPlus, FaArrowLeft, FaEye, FaEyeSlash, } from "react-icons/fa";
 import {uploadProfilePicture, updateUserProfile,  updatePassword, } from "../../apis/userApi";
 import { updateUser } from "../../redux/slices/authSlice";
-import defaultProfile from "../../assets/images/default-profile.jpg";
+import defaultProfile from "../../assets/images/default-profile.png";
 import { useSelector, useDispatch } from "react-redux";
 
 export default function EditUserProfile() {
@@ -152,7 +152,7 @@ export default function EditUserProfile() {
       <div className="w-full max-w-lg p-6 bg-white/10 backdrop-blur-md border border-gray-600 shadow-lg rounded-3xl relative">
 
         <button
-          onClick={() => navigate("/profile")}
+          onClick={() => navigate(currentUser?.role === "admin" ? "/admin-dashboard" : "/profile")}
           className="absolute top-5 left-5 z-50 p-3 bg-gray-700 hover:bg-gray-600 rounded-full transition cursor-pointer"
         >
           <FaArrowLeft />

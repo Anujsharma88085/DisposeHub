@@ -3,21 +3,24 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import Button from '@mui/material/Button';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { deleteContactMessage, getAllContactMessages } from '../apis/contactApi';
+import { CircularProgress } from '@mui/material';
 
 export default function ContactMessages() {
   const [messages, setMessages] = useState([]);
-  const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+  const [loading, setLoading] = useState(false);
 
   const fetchMessages = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/contact/admin/messages`, {
-       withCredentials: true,
-      });
+      setLoading(true);
+      const res = await getAllContactMessages();
       const raw = res.data;
       const list = Array.isArray(raw) ? raw : raw.messages;
       setMessages(Array.isArray(list) ? list : []);
     } catch (err) {
       console.error("Error fetching messages", err);
+    }finally{
+      setLoading(false);
     }
   };
   
@@ -25,7 +28,7 @@ export default function ContactMessages() {
 
   const deleteMessage = async (id) => {
     try {
-      await axios.delete(`${BASE_URL}/contact/admin/messages/${id}`);
+      await deleteContactMessage(id)
       setMessages((prev) => prev.filter((msg) => msg._id !== id));
     } catch (err) {
       console.error("Error deleting message", err);
@@ -35,6 +38,14 @@ export default function ContactMessages() {
   useEffect(() => {
     fetchMessages();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center bg-gradient-to-br from-purple-900 to-gray-900">
+        <CircularProgress sx={{ color: "#fff" }} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-950 to-black px-6 py-10 text-white">

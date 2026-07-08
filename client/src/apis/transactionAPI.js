@@ -15,3 +15,8 @@ export const withdrawMoney = async (formData) => {
   );
   return res.data;
 };
+
+export const fetchAllTransactions = async () => {
+  const res = await api.get('/api/v1/transactions');
+  return res.data;
+}

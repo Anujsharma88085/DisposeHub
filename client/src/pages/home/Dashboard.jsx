@@ -8,7 +8,7 @@ import Avatar from "@mui/material/Avatar";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { deepPurple } from "@mui/material/colors";
-import defaultProfile from "../../assets/images/default-profile.jpg";
+import defaultProfile from "../../assets/images/default-profile.png";
 
 export default function UserDashboard() {
   const user = useSelector((state) => state.auth.user);

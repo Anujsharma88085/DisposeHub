@@ -1,26 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
+import { fetchAllTransactions } from '../apis/transactionAPI';
+import { CircularProgress } from '@mui/material';
 
 export default function AdminTransactions() {
   const [transactions, setTransactions] = useState([]);
-
-  const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+  const [loading, setLoading] = useState(false);
 
   const fetchTransactions = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/transactions/`, {
-        withCredentials: true,
-      });
-      setTransactions(res.data.data.transactions);
+      setLoading(true);
+      const res = await fetchAllTransactions();
+      setTransactions(res.data.transactions);
     } catch (err) {
       console.error("Error fetching transactions", err);
+    }finally{
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchTransactions();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center bg-gradient-to-br from-purple-900 to-gray-900">
+        <CircularProgress sx={{ color: "#fff" }} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black px-6 py-10 text-white">

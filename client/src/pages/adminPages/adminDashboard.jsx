@@ -6,21 +6,11 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Avatar from "@mui/material/Avatar";
 import { Link } from "react-router-dom";
 import { deepPurple } from "@mui/material/colors";
+import { useSelector } from "react-redux";
+import defaultProfilePhoto from '../../assets/images/default-profile.png'
 
 export default function AdminDashboard() {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const data = await getMe();
-        setUser(data);
-      } catch (err) {
-        console.error("Error fetching user data", err);
-      }
-    };
-    fetchUser();
-  }, []);
+  const user = useSelector((state) => state.auth.user);
 
   if (!user) {
     return (
@@ -62,7 +52,6 @@ export default function AdminDashboard() {
  return (
   <div className="min-h-screen py-12 px-6 flex flex-col items-center bg-gradient-to-br from-purple-950 to-black text-white">
     
-    {/* Header */}
     <motion.div
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
@@ -75,7 +64,6 @@ export default function AdminDashboard() {
       </p>
     </motion.div>
 
-    {/* Centered Profile Card */}
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -83,8 +71,8 @@ export default function AdminDashboard() {
       className="bg-white/10 backdrop-blur-md rounded-3xl shadow-xl border border-purple-400 p-8 flex flex-col items-center text-center max-w-md w-full mb-12"
     >
       <Avatar
-        src={user.profilePicture || "https://i.pravatar.cc/100"}
-        sx={{ width: 120, height: 120, mb: 3 }}
+        src={user.profilePicture || defaultProfilePhoto}
+        sx={{ width: 100, height: 100, mb: 3 }}
       />
       <h2 className="text-2xl font-semibold">{user.name}</h2>
 
@@ -97,8 +85,7 @@ export default function AdminDashboard() {
       </p>
     </motion.div>
 
-    {/* Second Row - Only 2 Cards */}
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
       
       <AdminCard
         title="Transaction History"
@@ -113,6 +100,13 @@ export default function AdminDashboard() {
         link="/admin/contact-messages"
         buttonLabel="Support"
         delay={0.2}
+      />
+
+      <AdminCard
+        title="Edit Profile"
+        description="Manage your profile details, profile picture, and account settings."
+        link="/editProfile"
+        buttonLabel="Edit Profile"
       />
 
     </div>
