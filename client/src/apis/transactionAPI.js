@@ -2,7 +2,7 @@ import api from "./api";
 
 export const fetchUserTransactions = async () => {
   const res = await api.get("/api/v1/transactions/my");
-  return res.data.data.transactions;
+  return res.data;
 };
 
 export const withdrawMoney = async (formData) => {

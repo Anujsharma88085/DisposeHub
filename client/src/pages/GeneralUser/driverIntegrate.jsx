@@ -9,7 +9,8 @@ const DriverIntegrate = ({ garbageDumps }) => {
 
   const fetchLocations = async () => {
     try {
-      const locationsData = await getActiveLocations();
+      const data = await getActiveLocations();
+      const locationsData = data.locations || []
       const named = (locationsData || []).map((loc) => ({
         ...loc,
         id: loc._id,

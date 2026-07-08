@@ -5,7 +5,6 @@ import catchAsync from "../utils/catchAsync.js";
 import AppError from "../utils/appError.js";
 
 const walletController = {
-  // ADMIN / SYSTEM REWARD
   rewardUser: catchAsync(async (req, res) => {
     const { userId, amount } = req.body;
 
@@ -47,20 +46,6 @@ const walletController = {
       { $inc: { walletBalance: -amount } },
       { new: true },
     );
-
-    // try{
-    //   const logoUrl = `${req.protocol}://${req.get("host")}/logo/logo.png`;
-    //   const dashboardURL = `${process.env.FRONTEND_URL}/dashboard`;
-    //   await new Email(user, dashboardURL, { logoUrl, amount }).sendOnAmountTransfer();
-    // }catch (err) {
-    //   console.error('Email sending error:', err);
-    //   return next(
-    //     new AppError(
-    //       'There was an error sending the email, Try again later!',
-    //       500,
-    //     ),
-    //   );
-    // }
 
     await Transaction.create({
       user: user._id,

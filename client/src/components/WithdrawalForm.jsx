@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
-import { withdrawMoney } from '../apis/transactionAPI'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1";
+import { toast } from "react-toastify";
 
 const WithdrawalForm = ({ onSubmit, onCancel}) => {
   const [formData, setFormData] = useState({
@@ -20,7 +17,7 @@ const WithdrawalForm = ({ onSubmit, onCancel}) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.account !== formData.confirmAccount) {
-      alert('Account numbers do not match!');
+      toast.warning("Account numbers do not match.");
       return;
     }
     onSubmit(formData);

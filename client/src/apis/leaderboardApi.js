@@ -2,9 +2,9 @@ import api from './api'
 
 export const getLeaderboard = async (role) => {
 
-    const response = await api.get(
+    const res = await api.get(
         `/api/v1/leaderboard?role=${role}`
     );
 
-    return response.data;
+    return res.data;
 };

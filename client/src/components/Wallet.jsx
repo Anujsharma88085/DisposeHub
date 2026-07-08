@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import WithdrawalForm from './WithdrawalForm';
 import WalletBg from '../assets/transactionPage-bg.jpeg';
-import { getMe } from '../apis/userApi';
 import { withdrawMoney } from '../apis/transactionAPI';
 import { useDispatch } from "react-redux";
 import { updateWallet } from "../redux/slices/authSlice";
+import { showErrorToast } from "../utils/showErrorToast";
+import { useSelector } from 'react-redux';
+import { toast } from "react-toastify";
 
 export const Wallet = () => {
   const MIN_WITHDRAWAL = Number(import.meta.env.VITE_MIN_WITHDRAWAL) || 50;
   const [isFormVisible, setIsFormVisible] = useState(false);
-  const [balance, setBalance] = useState(0);
   const [withdrawRequest, setWithdrawRequest] = useState(false);
 
   const handleWithdrawClick = () => setIsFormVisible(true);
@@ -17,33 +18,27 @@ export const Wallet = () => {
 
   const dispatch = useDispatch();
 
+  const user = useSelector((state) => state.auth.user);
+
+  const balance = user?.walletBalance ?? 0;
+
   const handleFormSubmit = async (formData) => {
     setWithdrawRequest(true);
     setIsFormVisible(false);
 
     try {
       const res = await withdrawMoney(formData);
-      setBalance(res.walletBalance);
       dispatch(updateWallet(res.walletBalance));
-    } catch (err) {
-      console.error("Withdrawal failed", err);
-      alert("Withdrawal failed");
+      toast.success("Withdrawal completed successfully.");
+    } catch (error) {
+      if(import.meta.env.DEV){
+        console.error("Withdrawal failed", error);
+      }
+      showErrorToast(error);
     } finally {
       setWithdrawRequest(false);
     }
   };
-
-  useEffect(() => {
-    const fetchWalletBalance = async () => {
-      try {
-        const user = await getMe();
-        setBalance(user.walletBalance);
-      } catch (error) {
-        console.error("Error fetching user:", error);
-      }
-    };
-    fetchWalletBalance();
-  }, []);
 
   return (
     <div

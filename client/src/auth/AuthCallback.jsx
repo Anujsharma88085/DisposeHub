@@ -7,7 +7,8 @@ const AuthCallback = () => {
 
   useEffect(() => {
     const handleAuth = async () => {
-      const user = await getMe();
+      const data = await getMe();
+      const user = data?.data?.data;
 
       if (!user) {
         navigate("/login");

@@ -3,7 +3,7 @@ import api from "./api";
 export const getMe = async () => {
   try {
     const res = await api.get("/api/v1/users/me");
-    return res.data.data.data;
+    return res.data;
   } catch (err) {
     if (err.response?.status === 401) {
       return null;
@@ -22,7 +22,7 @@ export const uploadProfilePicture = async (file) => {
     formData
   );
 
-  return res.data.data;
+  return res.data;
 };
   
 export const updateUserProfile = async (updatedData) => {
@@ -37,6 +37,6 @@ export const updatePassword = async (passwordData) => {
     passwordData
   );
 
-  return res.data.data;
+  return res.data;
 };
   

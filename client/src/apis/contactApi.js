@@ -12,9 +12,10 @@ export const sendContactMessage = async (message) => {
 
 export const getAllContactMessages = async () => {
   const res = await api.get('/api/v1/contact/admin/messages');
-  return res;
+  return res.data;
 }
 
 export const deleteContactMessage = async (id) => {
-  const res = api.delete(`/api/v1/contact/admin/messages/${id}`)
+  const res = api.delete(`/api/v1/contact/admin/messages/${id}`);
+  return res.data;
 }

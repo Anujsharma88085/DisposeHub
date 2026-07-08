@@ -13,7 +13,7 @@ const TransactionsPage = () => {
     const getTransactions = async () => {
       try {
         const data = await fetchUserTransactions();
-        setTransactions(data);
+        setTransactions(data?.data?.transactions);
       } catch (err) {
         if (err.response?.status === 401) {
           navigate("/login");

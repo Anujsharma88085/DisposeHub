@@ -13,8 +13,7 @@ export default function ContactMessages() {
   const fetchMessages = async () => {
     try {
       setLoading(true);
-      const res = await getAllContactMessages();
-      const raw = res.data;
+      const raw = await getAllContactMessages();
       const list = Array.isArray(raw) ? raw : raw.messages;
       setMessages(Array.isArray(list) ? list : []);
     } catch (err) {
@@ -24,8 +23,6 @@ export default function ContactMessages() {
     }
   };
   
-  
-
   const deleteMessage = async (id) => {
     try {
       await deleteContactMessage(id)

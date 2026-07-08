@@ -40,8 +40,8 @@ const LoginPage = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const fetchUser = async () => {
-    const user = await getMe();
-
+    const data = await getMe();
+    const user = data?.data?.data;
     if (!user) {
       return;
     }

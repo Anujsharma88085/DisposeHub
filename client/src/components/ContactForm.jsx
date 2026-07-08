@@ -32,8 +32,9 @@ const ContactForm = () => {
   useEffect(() => {
     const init = async () => {
       try {
-        const me = await getMe();
-        setUser(me);
+        const data = await getMe();
+        const user = data?.data?.data;
+        setUser(user);
 
         const contactStatus = await getContactStatus();
         setCanSend(contactStatus.canSend);
