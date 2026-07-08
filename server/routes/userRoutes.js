@@ -1,6 +1,6 @@
 import express from "express";
 import * as userController from "../controllers/userController.js";
-import {login, signup, logout, forgotPassword, resetPassword } from "../controllers/authController.js"
+import {login, signup, logout, forgotPassword, resetPassword, updatePassword } from "../controllers/authController.js"
 import { protect } from "../middlewares/authMiddleware.js";
 import upload from "../middlewares/upload.js";
 
@@ -22,4 +22,5 @@ router.put(
   userController.uploadProfilePhoto
 );
 router.put("/update-profile", userController.updateUser);
+router.put('/update-password', updatePassword);
 export default router;

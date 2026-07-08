@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaPlus } from "react-icons/fa";
-import {uploadProfilePicture, updateUserProfile } from "../../apis/userApi";
+import { FaPlus, FaArrowLeft, FaEye, FaEyeSlash, } from "react-icons/fa";
+import {uploadProfilePicture, updateUserProfile,  updatePassword, } from "../../apis/userApi";
 import { updateUser } from "../../redux/slices/authSlice";
 import defaultProfile from "../../assets/images/default-profile.jpg";
 import { useSelector, useDispatch } from "react-redux";
@@ -21,6 +21,26 @@ export default function EditUserProfile() {
     vehicleNumber: currentUser.vehicleNumber || "",
   });
 
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    password: false,
+    confirm: false,
+  });
+
+  const [passwordData, setPasswordData] = useState({
+    passwordCurrent: "",
+    password: "",
+    passwordConfirm: "",
+  });
+
+  const togglePasswordVisibility = (field) => {
+    setShowPasswords((prev) => ({
+      ...prev,
+      [field]: !prev[field],
+    }));
+  };
+
   useEffect(() => {
     setEditedUser({
       name: currentUser.name,
@@ -35,6 +55,58 @@ export default function EditUserProfile() {
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+
+    setPasswordData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handlePasswordUpdate = async () => {
+    const { passwordCurrent, password, passwordConfirm } = passwordData;
+
+    if (!passwordCurrent || !password || !passwordConfirm) {
+      alert("Please fill all password fields.");
+      return;
+    }
+
+    if (
+      passwordCurrent.length < 5 ||
+      password.length < 5 ||
+      passwordConfirm.length < 5
+    ) {
+      alert("Password must be at least 5 characters long.");
+      return;
+    }
+
+    if (password !== passwordConfirm) {
+      alert("New password and confirm password do not match.");
+      return;
+    }
+
+    try {
+      setPasswordLoading(true);
+
+      await updatePassword(passwordData);
+
+      setPasswordData({
+        passwordCurrent: "",
+        password: "",
+        passwordConfirm: "",
+      });
+
+      alert("Password updated successfully.");
+    } catch (error) {
+      if(error.status === 401){
+        alert('your current password is wrong');
+      }
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   const handleUpload = async (e) => {
@@ -66,7 +138,7 @@ export default function EditUserProfile() {
     try {
       const updatedData = await updateUserProfile(editedUser);
       dispatch(updateUser(updatedData.user));
-      setTimeout(() => navigate("/profile"), 1000);
+      alert("profile updated successfully");
     } catch (error) {
       console.log("Error:", error.message);
     } finally {
@@ -78,6 +150,14 @@ export default function EditUserProfile() {
   return (
     <div className="flex flex-col items-center p-8 bg-black min-h-screen text-white">
       <div className="w-full max-w-lg p-6 bg-white/10 backdrop-blur-md border border-gray-600 shadow-lg rounded-3xl relative">
+
+        <button
+          onClick={() => navigate("/profile")}
+          className="absolute top-5 left-5 z-50 p-3 bg-gray-700 hover:bg-gray-600 rounded-full transition cursor-pointer"
+        >
+          <FaArrowLeft />
+        </button>
+
         {/* Profile Picture Upload */}
         <div className="relative flex flex-col items-center">
           <div className="w-36 h-36 rounded-full overflow-hidden border-4 border-cyan-400 shadow-lg relative group">
@@ -140,7 +220,110 @@ export default function EditUserProfile() {
         >
           {loading ? "Saving..." : "💾 Save Profile"}
         </button>
+
+        <div className="mt-10 border-t border-gray-600 pt-8">
+
+          <h2 className="text-center text-2xl font-bold text-purple-400">
+            Change Password
+          </h2>
+
+          <div className="mt-6 space-y-4">
+
+            <div className="relative">
+              <input
+                type={showPasswords.current ? "text" : "password"}
+                name="passwordCurrent"
+                value={passwordData.passwordCurrent}
+                onChange={handlePasswordChange}
+                placeholder="Current Password"
+                required
+                minLength={5}
+                className="w-full p-3 pr-12 text-lg border rounded-lg bg-black/20 border-purple-500 text-purple-200 focus:ring-2 focus:ring-purple-500 outline-none"
+              />
+
+              <button
+                type="button"
+                onClick={() => togglePasswordVisibility("current")}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white cursor-pointer"
+              >
+                {showPasswords.current ? <FaEyeSlash /> : <FaEye />}
+              </button>
+            </div>
+
+            <div className="relative">
+              <input
+                type={showPasswords.password ? "text" : "password"}
+                name="password"
+                value={passwordData.password}
+                onChange={handlePasswordChange}
+                placeholder="New Password (min length: 5)"
+                required
+                minLength={5}
+                className="w-full p-3 pr-12 text-lg border rounded-lg bg-black/20 border-purple-500 text-purple-200 focus:ring-2 focus:ring-purple-500 outline-none"
+              />
+
+              <button
+                type="button"
+                onClick={() => togglePasswordVisibility("password")}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white cursor-pointer"
+              >
+                {showPasswords.password ? <FaEyeSlash /> : <FaEye />}
+              </button>
+            </div>
+
+            <div>
+              <div className="relative">
+                <input
+                  type={showPasswords.confirm ? "text" : "password"}
+                  name="passwordConfirm"
+                  value={passwordData.passwordConfirm}
+                  onChange={handlePasswordChange}
+                  placeholder="Confirm New Password"
+                  required
+                  minLength={5}
+                  className="w-full p-3 pr-12 text-lg border rounded-lg bg-black/20 border-purple-500 text-purple-200 focus:ring-2 focus:ring-purple-500 outline-none"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => togglePasswordVisibility("confirm")}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white cursor-pointer"
+                >
+                  {showPasswords.confirm ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
+
+              {passwordData.passwordConfirm &&
+                passwordData.password !== passwordData.passwordConfirm && (
+                  <p className="mt-2 text-sm text-red-400">
+                    Passwords do not match.
+                  </p>
+                )}
+            </div>
+
+          </div>
+
+          <button
+            onClick={handlePasswordUpdate}
+            disabled={
+              passwordLoading ||
+              !passwordData.passwordCurrent ||
+              !passwordData.password ||
+              !passwordData.passwordConfirm ||
+              passwordData.passwordCurrent.length < 5 ||
+              passwordData.password.length < 5 ||
+              passwordData.passwordConfirm.length < 5 ||
+              passwordData.password !== passwordData.passwordConfirm
+            }
+            className="mt-6 w-full py-3 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {passwordLoading ? "Updating..." : "🔒 Update Password"}
+          </button>
+
+        </div>
       </div>
+
+      
     </div>
   );
 }

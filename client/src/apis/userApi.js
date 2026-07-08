@@ -29,4 +29,14 @@ export const updateUserProfile = async (updatedData) => {
   const res = await api.put(`/api/v1/users/update-profile`, updatedData);
   return res.data;
 };
+
+/* ================ UPDATE PASSWORD ============== */
+export const updatePassword = async (passwordData) => {
+  const res = await api.put(
+    "/api/v1/users/update-password",
+    passwordData
+  );
+
+  return res.data.data;
+};
   
