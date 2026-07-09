@@ -15,8 +15,8 @@ import {
   Tab,
   CircularProgress
 } from '@mui/material';
-import { motion } from 'framer-motion';
 import { useDispatch, useSelector } from "react-redux";
+import { motion } from "framer-motion";
 import { getLeaderboard } from '../apis/leaderboardApi';
 import {
   setLeaderboard,
@@ -105,6 +105,7 @@ const Leaderboard = () => {
         };
     }
   };
+  const M = motion;
 
   return (
     <Box sx={{

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import WithdrawalForm from './WithdrawalForm';
 import WalletBg from '../assets/transactionPage-bg.jpeg';
 import { withdrawMoney } from '../apis/transactionAPI';

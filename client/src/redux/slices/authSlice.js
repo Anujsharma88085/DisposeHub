@@ -31,7 +31,7 @@ const authSlice = createSlice({
   },
 
   extraReducers: (builder) => {
-    builder.addCase(logout, (state) => {
+    builder.addCase(logout, () => {
       disconnectSocket();
       return {
         ...initialState,

@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { motion } from 'framer-motion';
 import { fetchAllTransactions } from '../apis/transactionAPI';
 import { CircularProgress } from '@mui/material';
 

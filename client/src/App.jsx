@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import "leaflet/dist/leaflet.css";
 import "./App.css";
@@ -30,13 +30,12 @@ import ForgotPassword from './components/ForgotPassword';
 import PublicLayout from "./layouts/PublicLayout";
 import AppLayout from "./layouts/AppLayout";
 import { ToastContainer } from "react-toastify";
-import { getAllGarbageDumps } from "./apis/garbageApi";
 import { setNavigate } from "./utils/navigation";
 import { Box, CircularProgress } from "@mui/material";
 import { showErrorToast } from "./utils/showErrorToast";
+import ScrollToTop from "./components/ScrollToTop";
 
 function App() {
-  const [garbageDumps, setGarbageDumps] = useState({ data: [] });
   const authLoading = useSelector((state) => state.auth.authLoading);
 
   const dispatch = useDispatch();
@@ -84,6 +83,7 @@ function App() {
 
   return (
     <>
+      <ScrollToTop />
       <Routes>
         {/* Public Routes */}
         <Route element={<PublicLayout />}>

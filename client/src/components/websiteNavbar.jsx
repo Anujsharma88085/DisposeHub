@@ -1,8 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
 import { logout } from "../redux/actions/authActions";
-import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@mui/material';
 import { FaBell } from "react-icons/fa";
@@ -14,7 +13,23 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [isBellOpen, setIsBellOpen] = useState(false);
 
+  const bellRef = useRef(null);
+
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (bellRef.current && !bellRef.current.contains(event.target)) {
+        setIsBellOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const unreadCount = useSelector(
     (state) => state.notification.unreadCount
@@ -72,11 +87,14 @@ const Navbar = () => {
       <div className="flex items-center gap-6">
         {/* Notification Bell */}
         {role !== 'admin' && (
-          <div 
-            className="relative cursor-pointer bell-icon" 
-            onClick={toggleNotificationBell}
+          <div
+            ref={bellRef}
+            className="relative" 
           >
-            <FaBell className="text-2xl text-red-400 hover:text-red-600 transform transition duration-200 hover:scale-110" />
+            <FaBell
+              className="cursor-pointer text-2xl text-red-400 hover:text-red-600 transition duration-200 hover:scale-110"
+              onClick={toggleNotificationBell}
+            />
 
             {unreadCount > 0 && (
               <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">

@@ -56,9 +56,12 @@ export default function AppLayout() {
   }, [dispatch]);
   
   return (
-    <>
+    <div className="flex flex-col h-screen">
       <Navbar />
-      <Outlet />
-    </>
+
+      <main className="flex-1">
+        <Outlet />
+      </main>
+    </div>
   );
 }

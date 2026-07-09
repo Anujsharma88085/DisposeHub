@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from "react";
+
 import { motion } from "framer-motion";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import Avatar from "@mui/material/Avatar";
 import { Link } from "react-router-dom";
-import { deepPurple } from "@mui/material/colors";
 import { useSelector } from "react-redux";
 import defaultProfilePhoto from '../../assets/images/default-profile.png'
 

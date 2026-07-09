@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from "react-router-dom";
+import { FaArrowLeft } from "react-icons/fa";
 import { Box, Paper, Typography, Button, Divider, Tooltip } from '@mui/material';
 import { styled } from '@mui/system';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ClearIcon from '@mui/icons-material/Clear';
 import DeleteIcon from '@mui/icons-material/Delete';
-import io from 'socket.io-client';
+import SkipNextIcon from '@mui/icons-material/SkipNext';
 import { deactivateLocation } from "../apis/garbageApi";
-import { getSocket } from '../socket/socket';
+import { showErrorToast } from '../utils/showErrorToast';
+import { getSocket } from "../socket/socket";
 
 const Sidebar = styled(Paper)(({ theme }) => ({
   width: '100%',
@@ -18,13 +19,52 @@ const Sidebar = styled(Paper)(({ theme }) => ({
   flexDirection: 'column',
   padding: theme.spacing(3),
   overflowY: 'auto',
-  borderTopRightRadius: '24px',
-  borderBottomRightRadius: '24px',
+  borderRadius: 0,
 }));
 
 const DriverNavbar = ({ locations = [], setLocations }) => {
-  const [passed, setPassed] = useState({});
-  const [connectionStatus, setConnectionStatus] = useState('connected');
+  const socket = getSocket();
+
+  const [connectionStatus, setConnectionStatus] = useState(() => {
+      if (!socket) return "offline";
+      return socket.connected ? "connected" : "connecting";
+    }
+  );
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleConnect = () => {
+      setConnectionStatus("connected");
+    };
+
+    const handleDisconnect = () => {
+      setConnectionStatus("offline");
+    };
+
+    const handleReconnectAttempt = () => {
+      setConnectionStatus("connecting");
+    };
+
+    const handleConnectError = () => {
+      setConnectionStatus("connecting");
+    };
+
+
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
+    socket.io.on("reconnect_attempt", handleReconnectAttempt);
+    socket.on("connect_error", handleConnectError);
+
+    return () => {
+      socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
+      socket.off("connect_error", handleConnectError)
+      socket.io.off("reconnect_attempt", handleReconnectAttempt);
+    };
+  }, [socket]);
 
   const handleThrown = async (id) => {
     const confirm = window.confirm("Have you thrown the garbage?");
@@ -33,26 +73,84 @@ const DriverNavbar = ({ locations = [], setLocations }) => {
     try {
       await deactivateLocation(id);
     } catch (error) {
-      console.error("Failed to deactivate location:", error.message);
+      if(import.meta.env.DEV){
+        console.error("Failed to deactivate location:", error.message);
+      }
+      showErrorToast(error);
     }
+  };
+
+  const handlePass = (id) => {
+    setLocations((prev) =>
+      prev.filter((loc) => (loc._id || loc.id) !== id)
+    );
   };
 
   return (
     <Sidebar elevation={0}>
 
-      {/* Connection Status Indicator */}
-      <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
-        <Box sx={{ 
-          width: 8, 
-          height: 8, 
-          borderRadius: '50%', 
-          bgcolor: connectionStatus === 'connected' ? '#4ade80' : connectionStatus === 'connecting' ? '#fcd34d' : '#ef4444',
-          animation: connectionStatus === 'connected' ? 'pulse 1.5s infinite' : 'none'
-        }} />
-        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-          {connectionStatus === 'connected' ? 'Live' : 
-           connectionStatus === 'connecting' ? 'Connecting...' : 'Offline'}
-        </Typography>
+      <Box
+        sx={{
+          mb: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <Button
+          onClick={() => navigate(-1)}
+          startIcon={<FaArrowLeft />}
+          variant="text"
+          sx={{
+            color: "#fff",
+            textTransform: "none",
+            minWidth: "auto",
+            px: 1,
+            "&:hover": {
+              backgroundColor: "rgba(255,255,255,0.08)",
+            },
+          }}
+        >
+          Back
+        </Button>
+
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          <Box
+            sx={{
+              width: 12,
+              height: 12,
+              borderRadius: "50%",
+              bgcolor:
+                connectionStatus === "connected"
+                  ? "#4ade80"
+                  : connectionStatus === "connecting"
+                  ? "#fcd34d"
+                  : "#ef4444",
+              animation:
+                connectionStatus === "connected"
+                  ? "pulse 1.5s infinite"
+                  : "none",
+              flexShrink: 0,
+            }}
+          />
+
+          <Typography
+            variant="caption"
+            sx={{ color: "rgba(255,255,255,0.7)" }}
+          >
+            {connectionStatus === "connected"
+              ? "Live"
+              : connectionStatus === "connecting"
+              ? "Connecting..."
+              : "Offline"}
+          </Typography>
+        </Box>
       </Box>
 
       <Typography
@@ -93,8 +191,6 @@ const DriverNavbar = ({ locations = [], setLocations }) => {
               '&:hover': {
                 transform: 'translateY(-4px)',
               },
-              opacity: passed[loc._id] ? 0.5 : 1,
-              pointerEvents: passed[loc._id] ? 'none' : 'auto',
             }}
           >
             <Box display="flex" alignItems="center" gap={1} mb={1}>
@@ -110,12 +206,32 @@ const DriverNavbar = ({ locations = [], setLocations }) => {
             </Typography>
 
             <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>
-              Requested: {loc.timestamp ? new Date(loc.timestamp).toLocaleTimeString() : 'Recently'}
+              Requested: {loc.updatedAt ? new Date(loc.updatedAt).toLocaleString() : 'Recently'}
             </Typography>
 
             <Divider sx={{ my: 1.5, borderColor: 'rgba(255,255,255,0.2)' }} />
 
-            <Box display="flex" gap={1} flexWrap="wrap">
+            <Box display="flex" gap={4} flexWrap="wrap">
+              <Tooltip title="Skip this request for now">
+                <Button
+                  variant="outlined"
+                  startIcon={<SkipNextIcon />}
+                  onClick={() => handlePass(loc._id || loc.id)}
+                  sx={{
+                    color: '#fbbf24',
+                    borderColor: '#fbbf24',
+                    textTransform: 'none',
+                    borderRadius: 3,
+                    '&:hover': {
+                      borderColor: '#f59e0b',
+                      backgroundColor: 'rgba(251,191,36,0.08)',
+                    },
+                  }}
+                >
+                  Pass
+                </Button>
+              </Tooltip>
+
               <Tooltip title="Mark Thrown">
                 <Button
                   variant="contained"
@@ -129,7 +245,7 @@ const DriverNavbar = ({ locations = [], setLocations }) => {
                     textTransform: 'none',
                   }}
                   startIcon={<DeleteIcon />}
-                  onClick={() => handleThrown(loc.id)}
+                  onClick={() => handleThrown(loc._id || loc.id)}
                 >
                   Thrown
                 </Button>

@@ -1,17 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { motion } from "framer-motion";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import Avatar from "@mui/material/Avatar";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-import { deepPurple } from "@mui/material/colors";
 import defaultProfile from "../../assets/images/default-profile.png";
 
 export default function UserDashboard() {
   const user = useSelector((state) => state.auth.user);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -384,7 +382,7 @@ export default function UserDashboard() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="text-center mb-14"
+        className="text-center mb-1"
       >
         <h1 className="text-5xl font-extrabold text-white drop-shadow-xl tracking-tight">
           Welcome to DesposeHub

@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import { motion } from 'framer-motion';
 import Button from '@mui/material/Button';
 import DeleteIcon from '@mui/icons-material/Delete';
