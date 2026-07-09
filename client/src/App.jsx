@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import "leaflet/dist/leaflet.css";
 import "./App.css";
-import { useDispatch } from "react-redux";
-import { loginSuccess } from "./redux/slices/authSlice"; 
+import { useDispatch, useSelector } from "react-redux";
+import { loginSuccess, setAuthLoading } from "./redux/slices/authSlice"; 
 
-// Pages and Components
 import ProtectedRoute from "./components/ProtectedRoute";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
@@ -30,50 +29,58 @@ import ResetPassword from './components/ResetPassword';
 import ForgotPassword from './components/ForgotPassword';
 import PublicLayout from "./layouts/PublicLayout";
 import AppLayout from "./layouts/AppLayout";
+import { ToastContainer } from "react-toastify";
+import { getAllGarbageDumps } from "./apis/garbageApi";
+import { setNavigate } from "./utils/navigation";
+import { Box, CircularProgress } from "@mui/material";
+import { showErrorToast } from "./utils/showErrorToast";
 
 function App() {
-  const [authLoading, setAuthLoading] = useState(true);
   const [garbageDumps, setGarbageDumps] = useState({ data: [] });
-
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+  const authLoading = useSelector((state) => state.auth.authLoading);
 
   const dispatch = useDispatch();
 
-  // AUTH + INITIAL FETCH
+  const navigate = useNavigate();
+
   useEffect(() => {
-    const fetchUser = async () => {
+      setNavigate(navigate);
+  }, [navigate]);
+
+  useEffect(() => {
+    const initializeAuth = async () => {
       try {
         const user = await getMe();
-        
+
         if (user) {
           dispatch(loginSuccess(user));
         }
-      } catch (error) {
-        console.error("Error fetching user:", error);
-      }finally {
-        setAuthLoading(false);
+      }
+      catch (error) {
+        showErrorToast(error);
+      }  
+      finally {
+        dispatch(setAuthLoading(false));
       }
     };
 
-    const fetchGarbageDumps = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/garbage/all`);
-        const data = await response.json();
-        if (data.success) {
-          setGarbageDumps(data);
-        } else {
-          console.error("Failed to fetch garbage dumps:", data.message);
-        }
-      } catch (error) {
-        console.error("Error fetching garbage dumps:", error);
-      }
-    };
-
-    fetchUser();
-    fetchGarbageDumps();
+    initializeAuth();
   }, [dispatch]);
 
-  if (authLoading) return <div>Loading...</div>;
+  if (authLoading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <>
@@ -97,7 +104,7 @@ function App() {
         {/* user + driver */}
         <Route element={<ProtectedRoute allowedRoles={["user", "driver"]} />}>
           <Route element={<AppLayout />}>
-            <Route path="/map" element={<Integrate garbageDumps={garbageDumps} />} />
+            <Route path="/map" element={<Integrate />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/profile" element={<UserProfile />} />
@@ -108,7 +115,7 @@ function App() {
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={["driver"]} />}>
-          <Route path="/driver" element={<DriverIntegrate garbageDumps={garbageDumps} />} />
+          <Route path="/driver" element={<DriverIntegrate />} />
         </Route>
 
         {/*  ADMIN ONLY ROUTES */}
@@ -123,6 +130,17 @@ function App() {
         <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        draggable
+        theme="dark"
+      />
     </>
   );
 }

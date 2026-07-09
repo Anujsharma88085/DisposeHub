@@ -1,14 +1,15 @@
 import api from "./api";
 
 export const getMe = async () => {
-  try {
+  try{
     const res = await api.get("/api/v1/users/me");
-    return res.data;
-  } catch (err) {
-    if (err.response?.status === 401) {
+    return res.data.data?.data;
+  }
+  catch(error){
+    if (error.response?.status === 401) {
       return null;
     }
-    throw err;
+    throw error;
   }
 };
 

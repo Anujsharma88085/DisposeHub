@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
-import { getMe } from "../../src/apis/userApi";
+import { useSelector } from "react-redux";
 import {
   sendContactMessage,
   getContactStatus,
 } from "../apis/contactApi";
-
-const ContactBg =
-  "https://images.unsplash.com/photo-1525182008055-f88b95ff7980?auto=format&fit=crop&w=1470&q=80";
+import contactBg from '../assets/images/contactBg.avif'
+import { showErrorToast } from "../utils/showErrorToast";
+import { Box, CircularProgress } from "@mui/material";
+import { toast } from "react-toastify";
 
 const formatRemainingTime = (ms) => {
   if (!ms || ms <= 0) return null;
@@ -20,27 +21,26 @@ const formatRemainingTime = (ms) => {
 
 const ContactForm = () => {
   const [message, setMessage] = useState("");
-  const [status, setStatus] = useState("");
-  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const [canSend, setCanSend] = useState(true);
   const [remainingMs, setRemainingMs] = useState(0);
+
+  const user = useSelector((state) => state.auth.user);
 
   /* ================= INITIAL LOAD ================= */
 
   useEffect(() => {
     const init = async () => {
       try {
-        const data = await getMe();
-        const user = data?.data?.data;
-        setUser(user);
-
         const contactStatus = await getContactStatus();
         setCanSend(contactStatus.canSend);
         setRemainingMs(contactStatus.remainingMs || 0);
-      } catch (err) {
-        console.error("Failed to load contact data");
+      } catch (error) {
+        if(import.meta.env.DEV){
+          console.error("Failed to load contact data:", error);
+        }
+        showErrorToast(error);
       } finally {
         setLoading(false);
       }
@@ -72,20 +72,17 @@ const ContactForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setStatus("");
 
     try {
       await sendContactMessage(message);
-      setStatus("✅ Message sent successfully!");
+      toast.success("Message sent successfully!");
       setMessage("");
 
       const updatedStatus = await getContactStatus();
       setCanSend(updatedStatus.canSend);
       setRemainingMs(updatedStatus.remainingMs || 0);
-    } catch (err) {
-      setStatus(
-        err.response?.data?.message || "❌ Failed to send message"
-      );
+    } catch (error) {
+      showErrorToast(error);
     }
   };
 
@@ -93,15 +90,16 @@ const ContactForm = () => {
 
   if (loading) {
     return (
-      <p className="text-center mt-10 text-white">Loading...</p>
-    );
-  }
-
-  if (!user) {
-    return (
-      <p className="text-center mt-10 text-white">
-        Please login to contact us.
-      </p>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
     );
   }
 
@@ -110,7 +108,7 @@ const ContactForm = () => {
   return (
     <div
       className="min-h-screen bg-cover bg-center flex items-center justify-center px-4 py-10"
-      style={{ backgroundImage: `url(${ContactBg})` }}
+      style={{ backgroundImage: `url(${contactBg})` }}
     >
       <div className="w-full max-w-xl bg-black/60 backdrop-blur-md rounded-3xl p-6 shadow-2xl text-white">
         <h2 className="text-3xl font-bold text-cyan-400 mb-6 text-center">
@@ -154,18 +152,6 @@ const ContactForm = () => {
             >
               Send
             </button>
-
-            {status && (
-              <p
-                className={`text-sm mt-2 ${
-                  status.startsWith("✅")
-                    ? "text-green-400"
-                    : "text-red-400"
-                }`}
-              >
-                {status}
-              </p>
-            )}
           </form>
         )}
       </div>

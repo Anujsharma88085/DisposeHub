@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   TextField,
   Button,
@@ -27,9 +27,8 @@ import { signupUser } from "../../apis/authApi";
 import Lottie from "lottie-react";
 import backgroundAnimation from "../../assets/animations/background-animation.json";
 import { Typewriter } from "react-simple-typewriter";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { loginSuccess } from "../../redux/slices/authSlice";
-import {connectSocket} from "../../socket/socket"
 
 const SignupPage = () => {
   const [input, setInput] = useState({
@@ -50,7 +49,20 @@ const SignupPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const theme = useTheme();
+
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
+  const user = useSelector((state) => state.auth.user);
+
+  useEffect(() => {
+    if (!user) return;
+
+    if (user.role === "admin") {
+      navigate("/admin-dashboard", { replace: true });
+    } else {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleSignup = async (e) => {
     e.preventDefault();
@@ -78,18 +90,10 @@ const SignupPage = () => {
         vehicleNumber: input.role === "driver" ? input.vehicleNumber : undefined,
       });
 
-      const user = res.data.user;
+      const authenticatedUser = res.data?.user;
       dispatch(
-        loginSuccess({
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          vehicleNumber: user.vehicleNumber || null,
-          avatar: user.avatar || "/default-avatar.png",
-        })
+        loginSuccess(authenticatedUser)
       );
-      connectSocket();
-      navigate("/dashboard");
     } catch (err) {
         const field = err.response?.data?.field;
         const message =

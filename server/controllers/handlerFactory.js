@@ -46,9 +46,14 @@ export const createOne = (Model) =>
     });
   });
 
-export const getOne = (Model, popOptions) =>
+export const getOne = (Model, projection, popOptions) =>
   catchAsync(async (req, res, next) => {
     let query = Model.findById(req.params.id);
+
+    if (projection) {
+      query = query.select(projection);
+    }
+
     if (popOptions) query = query.populate(popOptions);
 
     const doc = await query;

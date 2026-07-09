@@ -4,6 +4,8 @@ import fs from 'fs';
 import { getOne } from './handlerFactory.js';
 import catchAsync from "../utils/catchAsync.js";
 
+const USER_PUBLIC_FIELDS =
+  "name email role profilePicture walletBalance points provider vehicleNumber";
 
 export const getMe = (req, res, next) => {
   req.params.id = req.user._id;
@@ -42,7 +44,7 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
-
+// TODO: Enable when `username` field is added to User schema.
 export const checkUsernameAvailability = async (req, res) => {
   try {
     const { username } = req.params; // Extract username from params
@@ -77,7 +79,11 @@ export const uploadProfilePhoto = catchAsync(async (req, res, next) => {
     folder: "disposehub/profile-pictures",
   });
 
-  fs.unlinkSync(req.file.path);
+  try {
+    fs.unlinkSync(req.file.path);
+  } catch (err) {
+      console.error(err);
+  }
 
   const updatedUser = await User.findByIdAndUpdate(
     userId,
@@ -101,5 +107,7 @@ export const uploadProfilePhoto = catchAsync(async (req, res, next) => {
   });
 });
 
-
-export const getCurrentUser = getOne(User);
+export const getCurrentUser = getOne(
+  User,
+  USER_PUBLIC_FIELDS,
+);

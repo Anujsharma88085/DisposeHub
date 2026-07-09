@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import DriverLeafletMap from '../../components/driverLeaflet';
 import DriverNavbar from '../../components/navbarDriver';
-import { getActiveLocations } from '../../apis/garbageApi';
+import { getActiveLocations, getAllGarbageDumps } from '../../apis/garbageApi';
+import { showErrorToast } from '../../utils/showErrorToast';
 
-const DriverIntegrate = ({ garbageDumps }) => {
+const DriverIntegrate = () => {
   const [locations, setLocations] = useState([]);
+  const [garbageDumps, setGarbageDumps] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchLocations = async () => {
@@ -23,15 +25,39 @@ const DriverIntegrate = ({ garbageDumps }) => {
         updatedAt: loc.updatedAt
       }));
       setLocations(named);
-    } catch (err) {
-      console.error("Error fetching active locations:", err);
-    } finally {
-      setIsLoading(false);
+    } catch (error) {
+      if(import.meta.env.DEV){
+        console.error("Error fetching active locations", error);
+      }
+      showErrorToast(error);
+    }
+  };
+
+  const fetchGarbageDumps = async () => {
+    try {
+      const data = await getAllGarbageDumps();
+      setGarbageDumps(data?.data || []);
+    } catch (error) {
+      if(import.meta.env.DEV){
+        console.error("Error fetching garbage dumps:", error);
+      }
+      showErrorToast(error);
     }
   };
 
   useEffect(() => {
-    fetchLocations();
+    const loadData = async () => {
+      setIsLoading(true);
+
+      await Promise.all([
+        fetchLocations(),
+        fetchGarbageDumps(),
+      ]);
+
+      setIsLoading(false);
+    };
+
+    loadData();
   }, []);
 
   if (isLoading) {

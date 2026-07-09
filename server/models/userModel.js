@@ -22,7 +22,10 @@ const userSchema = new mongoose.Schema({
     default: "local",
   },
 
-  googleId: String,
+  googleId: {
+    type: String,
+    select: false,
+  },
 
   password: {
     type: String,
@@ -75,9 +78,21 @@ const userSchema = new mongoose.Schema({
     default: 0
   },
 
-  passwordChangedAt: Date,
-  passwordResetToken: String,
-  passwordResetExpires: Date,
+  passwordChangedAt: {
+    type: Date,
+    select: false,
+  },
+
+  passwordResetToken: {
+    type: String,
+    select: false,
+  },
+
+  passwordResetExpires: {
+    type: Date,
+    select: false,
+  },
+
   active: {
     type: Boolean,
     default: true,

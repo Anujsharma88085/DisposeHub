@@ -3,7 +3,7 @@ import authReducer from "./slices/authSlice";
 import notificationReducer from "./slices/notificationSlice";
 import leaderboardReducer from "./slices/leaderboardSlice"
 
-const store = configureStore({
+export const store = configureStore({
   reducer: {
     auth: authReducer,
     notification: notificationReducer,

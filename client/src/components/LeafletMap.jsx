@@ -8,9 +8,13 @@ import { getSocket } from "../socket/socket";
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-import { savePickupLocation, getUserActiveLocation, deactivateLocation, cancelLocation } from '../apis/garbageApi';
+import { savePickupLocation, getUserActiveLocation, cancelLocation, getAllGarbageDumps } from '../apis/garbageApi';
 import { registerPickupListeners } from '../socket/listeners';
 import { emitLocationUpdate } from '../socket/emitters';
+import { toast } from "react-toastify";
+import { showErrorToast } from "../utils/showErrorToast";
+import { Box, CircularProgress } from '@mui/material';
+import {MAP_INITIAL_ZOOM} from '../constants/map'
 
 delete L.Icon.Default.prototype._getIconUrl;
 
@@ -19,19 +23,6 @@ L.Icon.Default.mergeOptions({
   iconUrl: markerIcon,
   shadowUrl: markerShadow,
 });
-
-function getAreaCode(lat, lng) {
-  if (lat > 28 && lng > 76 && lng < 78) return "DEL";
-  if (lat > 18 && lat < 20 && lng > 72 && lng < 73) return "MUM";
-  if (lat > 12 && lat < 14 && lng > 77 && lng < 78) return "BLR";
-  return "GEN";
-}
-
-function generateDustbinName(lat, lng) {
-  const area = getAreaCode(lat, lng);
-  const seq = Date.now().toString().slice(-4);
-  return `GB-IND-${area}-${seq}`;
-}
 
 const userIcon = (color = 'blue') =>
   new L.Icon({
@@ -52,14 +43,6 @@ const greenIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
-const RecenterMap = ({ lat, lng }) => {
-  const map = useMap();
-  useEffect(() => {
-    if (lat && lng) map.setView([lat, lng], 13);
-  }, [lat, lng, map]);
-  return null;
-};
-
 const MapClickHandler = ({ onClick }) => {
   const map = useMap();
   useEffect(() => {
@@ -72,73 +55,68 @@ const MapClickHandler = ({ onClick }) => {
   return null;
 };
 
-const CurrentLocationButton = () => {
+const CurrentLocationButton = ({ myLocation }) => {
   const map = useMap();
   const controlRef = useRef(null);
 
   useEffect(() => {
     if (!map || controlRef.current) return;
 
-    const button = L.DomUtil.create('button', 'leaflet-bar leaflet-control leaflet-control-custom');
-    button.innerHTML = '📍';
-    button.title = 'Go to My Location';
-    button.style.backgroundColor = 'white';
-    button.style.width = '34px';
-    button.style.height = '34px';
-    button.style.border = 'none';
-    button.style.cursor = 'pointer';
-    button.style.fontSize = '20px';
-    button.style.borderRadius = '4px';
-    button.style.boxShadow = '0 1px 5px rgba(0,0,0,0.2)';
+    const button = L.DomUtil.create(
+      "button",
+      "leaflet-bar leaflet-control leaflet-control-custom"
+    );
+
+    button.innerHTML = "📍";
+    button.title = "Go to My Location";
+    button.style.backgroundColor = "white";
+    button.style.width = "34px";
+    button.style.height = "34px";
+    button.style.border = "none";
+    button.style.cursor = "pointer";
+    button.style.fontSize = "20px";
+    button.style.borderRadius = "4px";
+    button.style.boxShadow = "0 1px 5px rgba(0,0,0,0.2)";
 
     L.DomEvent.disableClickPropagation(button);
     L.DomEvent.disableScrollPropagation(button);
 
     button.onclick = () => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            map.setView([lat, lng], 14);
-          },
-          (error) => {
-            console.error('Geolocation error:', error);
-            alert('Failed to get your current location.');
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0,
-          }
-        );
-      } else {
-        alert('Geolocation is not supported by this browser.');
+      if (!myLocation) {
+        toast.error("Current location not available.");
+        return;
       }
+
+      map.setView([myLocation.lat, myLocation.lng], MAP_INITIAL_ZOOM, {
+        animate: true,
+      });
     };
 
-    const control = L.control({ position: 'topright' });
+    const control = L.control({ position: "topright" });
+
     control.onAdd = () => button;
     control.addTo(map);
     controlRef.current = control;
 
     return () => {
-      if (controlRef.current && map) {
+      if (controlRef.current) {
         map.removeControl(controlRef.current);
         controlRef.current = null;
       }
     };
-  }, [map]);
+  }, [map, myLocation]);
 
   return null;
 };
 
-const LeafletMap = ({ garbageDumps }) => {
+const LeafletMap = () => {
   const [myLocation, setMyLocation] = useState(null);
   const [pathPositions, setPathPositions] = useState([]);
   const [pickupLocations, setPickupLocations] = useState([]);
-  const [connectionStatus, setConnectionStatus] = useState('connecting');
   const [isLoadingExisting, setIsLoadingExisting] = useState(true);
+  const [isLoadingGarbage, setIsLoadingGarbage] = useState(true);
+  const [garbageDumps, setGarbageDumps] = useState([]);
+
   const mapRef = useRef(null);
   const markerRefs = useRef({});
   const locationWatchIdRef = useRef(null);
@@ -161,7 +139,7 @@ const LeafletMap = ({ garbageDumps }) => {
     return cleanup;
   }, [socket]);
 
-  // Fetch user's existing active location from backend on page load
+  // Fetch user's existing active pickup location from backend
   useEffect(() => {
     const fetchUserActiveLocation = async () => {
       if (!user || user.role !== 'user') {
@@ -170,14 +148,17 @@ const LeafletMap = ({ garbageDumps }) => {
       }
       
       try {
-        const userLocation = await getUserActiveLocation();
+        const data = await getUserActiveLocation();
+        const userLocation = data?.location;
         if(!userLocation) return;
 
         if (userLocation && userLocation.active) {
           setPickupLocations([userLocation]);
         }
       } catch (error) {
-        console.log(error.message);
+        if (import.meta.env.DEV) {
+          console.error("Failed to fetch active pickup:", error);
+        }
       } finally {
         setIsLoadingExisting(false);
       }
@@ -192,7 +173,6 @@ const LeafletMap = ({ garbageDumps }) => {
 
     const startWatchingLocation = () => {
       if (navigator.geolocation) {
-        // Use watchPosition for continuous tracking
         const watchId = navigator.geolocation.watchPosition(
           (position) => {
             hasLoggedError.current = false;
@@ -201,11 +181,10 @@ const LeafletMap = ({ garbageDumps }) => {
             const lng = position.coords.longitude;
             setMyLocation({ lat, lng });
             
-            // Send location to socket immediately when changed
             emitLocationUpdate({lat, lng});
           },
           (error) => {
-            if (!hasLoggedError.current) {
+            if (!hasLoggedError.current && import.meta.env.DEV) {
               console.error("Geolocation error:", error.message);
               hasLoggedError.current = true;
             }
@@ -236,13 +215,36 @@ const LeafletMap = ({ garbageDumps }) => {
     };
   }, [user]);
 
+  useEffect(() => {
+    const loadGarbageDumps = async () => {
+      try {
+        const data = await getAllGarbageDumps();
+        setGarbageDumps(data.data || []);
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error("Failed to load garbage dumps:", error);
+        }
+        showErrorToast(error);
+      }finally{
+        setIsLoadingGarbage(false);
+      }
+    };
+
+    loadGarbageDumps();
+  }, []);
+
   const cancelPickup = async (pickupId) => {
     if (window.confirm('Are you sure you want to cancel this pickup request?')) {
       try {
         await cancelLocation(pickupId);
-        setPickupLocations(prev => prev.filter(loc => loc._id !== pickupId));
+
+        setPickupLocations(prev =>
+         prev.filter(loc => loc._id !== pickupId)
+        );
+
+        toast.success("Pickup request cancelled successfully.");
       } catch (error) {
-        alert(error.message);
+        showErrorToast(error);
       }
     }
   };
@@ -250,7 +252,7 @@ const LeafletMap = ({ garbageDumps }) => {
   // Only allow ONE active pickup location per user
   const handleMapClick = async (e) => {
     if (!user || user.role !== 'user') {
-      alert('Please login as a user to request pickup');
+      toast.warning("Please login as a user to request pickup.");
       return;
     }
 
@@ -277,7 +279,9 @@ const LeafletMap = ({ garbageDumps }) => {
       const data = await response.json();
       locationName = data.features?.[0]?.properties?.name || locationName;
     } catch (error) {
-      console.error("Reverse geocoding failed:", error);
+      if (import.meta.env.DEV) {
+        console.error("Reverse geocoding failed:", error);
+      }
     }
     
     const confirmPickup = window.confirm(
@@ -302,10 +306,17 @@ const LeafletMap = ({ garbageDumps }) => {
         return [...filtered,  savedLocation];
       }); 
 
-      alert(`✅ Pickup location ${userActivePickup ? 'updated' : 'requested'} successfully! A driver will be assigned soon`);
+      toast.success(
+        `Pickup location ${
+          userActivePickup ? "updated" : "requested"
+        } successfully. A driver will be assigned soon.`
+      );
     } catch (error) {
-      console.error("Failed to save pickup location:", error.message);
-      alert('❌ Failed to save pickup location. Please try again.');
+      if (import.meta.env.DEV) {
+        console.error("Failed to save pickup location:", error);
+      }
+
+      showErrorToast(error);
     }
   };
 
@@ -334,7 +345,9 @@ const LeafletMap = ({ garbageDumps }) => {
         ]);
       }
     } catch (error) {
-      console.error("Failed to fetch route:", error);
+      if (import.meta.env.DEV) {
+        console.error("Failed to fetch route:", error);
+      }
       setPathPositions([
         [myLocation.lat, myLocation.lng],
         [dumpData.lat, dumpData.long],
@@ -354,14 +367,18 @@ const LeafletMap = ({ garbageDumps }) => {
     );
   }
 
-  if (!myLocation || isLoadingExisting) {
+  if (!myLocation || isLoadingExisting || isLoadingGarbage) {
     return (
-      <div className="w-full h-full flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">{isLoadingExisting ? 'Loading your saved location...' : 'Getting your location...'}</p>
-        </div>
-      </div>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
     );
   }
 
@@ -370,12 +387,12 @@ const LeafletMap = ({ garbageDumps }) => {
       
       <MapContainer
         center={[myLocation.lat, myLocation.lng]}
-        zoom={14}
+        zoom={MAP_INITIAL_ZOOM}
         style={{ height: '100%', width: '100%' }}
         ref={mapRef}
       >
         <MapClickHandler onClick={handleMapClick} />
-        <CurrentLocationButton />
+        <CurrentLocationButton myLocation={myLocation} />
 
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -442,7 +459,7 @@ const LeafletMap = ({ garbageDumps }) => {
         ))}
 
 
-        {garbageDumps?.data?.map((dump, index) => (
+        {garbageDumps?.map((dump, index) => (
           <Marker
             key={`dump-${index}`}
             position={[dump.lat, dump.long]}

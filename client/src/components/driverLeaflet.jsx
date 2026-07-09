@@ -473,7 +473,7 @@ const DriverLeafletMap = ({ pickupLocations, setPickupLocations, garbageDumps })
     });
     garbageMarkersRef.current = [];
 
-    const garbageData = garbageDumps?.data || [];
+    const garbageData = garbageDumps || [];
 
     garbageData.forEach((dump) => {
       const lat = dump.lat || dump.latitude;
@@ -611,7 +611,7 @@ const DriverLeafletMap = ({ pickupLocations, setPickupLocations, garbageDumps })
           <div className="text-xs text-gray-600">Active Pickups</div>
         </div>
         <div className="bg-green-50 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-green-600">{garbageDumps?.data?.length || 0}</div>
+          <div className="text-2xl font-bold text-green-600">{garbageDumps?.length || 0}</div>
           <div className="text-xs text-gray-600">Garbage Dumps</div>
         </div>
       </div>
@@ -630,7 +630,7 @@ const DriverLeafletMap = ({ pickupLocations, setPickupLocations, garbageDumps })
           </div>
           <div className="flex items-center">
             <div className="w-4 h-4 bg-blue-500 rounded-full mr-2"></div>
-            <span>Garbage Dumps ({garbageDumps?.data?.length || 0})</span>
+            <span>Garbage Dumps ({garbageDumps?.length || 0})</span>
           </div>
           <div className="flex items-center">
             <div className="w-4 h-4 bg-yellow-500 rounded-full mr-2"></div>
@@ -658,7 +658,7 @@ const DriverLeafletMap = ({ pickupLocations, setPickupLocations, garbageDumps })
             {pickupLocations.length > 0 && (
               <p className="text-green-600 mt-1">✨ {pickupLocations.length} active pickup request(s) waiting!</p>
             )}
-            {(!garbageDumps?.data || garbageDumps.data.length === 0) && (
+            {(!garbageDumps || garbageDumps?.length === 0) && (
               <p className="text-red-600 mt-1">⚠️ No garbage dumps found in database. Please add some garbage locations.</p>
             )}
           </div>

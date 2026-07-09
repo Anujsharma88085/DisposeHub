@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
-import { logout } from "../redux/slices/authSlice";
+import { logout } from "../redux/actions/authActions";
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@mui/material';

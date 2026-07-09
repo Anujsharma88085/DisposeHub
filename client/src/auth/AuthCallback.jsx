@@ -1,29 +1,26 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getMe } from "../apis/userApi";
+import { useSelector } from "react-redux";
 
 const AuthCallback = () => {
   const navigate = useNavigate();
 
+  const { user, authLoading } = useSelector((state) => state.auth);
+
   useEffect(() => {
-    const handleAuth = async () => {
-      const data = await getMe();
-      const user = data?.data?.data;
+    if (authLoading) return;
 
-      if (!user) {
-        navigate("/login");
-        return;
-      }
+    if (!user) {
+      navigate("/login", { replace: true });
+      return;
+    }
 
-      if (user.role === "admin") {
-        navigate("/admin-dashboard");
-      } else {
-        navigate("/dashboard");
-      }
-    };
-
-    handleAuth();
-  }, []);
+    if (user.role === "admin") {
+      navigate("/admin-dashboard", { replace: true });
+    } else {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [user, authLoading, navigate]);
 
   return <p>Signing you in...</p>;
 };

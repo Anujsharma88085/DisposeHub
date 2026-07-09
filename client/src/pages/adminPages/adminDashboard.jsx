@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { getMe } from "../../apis/userApi";
 import { motion } from "framer-motion";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";

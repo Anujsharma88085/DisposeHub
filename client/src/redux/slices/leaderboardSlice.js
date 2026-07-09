@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { logout } from "../actions/authActions";
 
 const initialState = {
   leaderboard: [],
@@ -17,6 +18,10 @@ const leaderboardSlice = createSlice({
       state.leaderboard = action.payload;
     },
   },
+
+  extraReducers: (builder) => {
+    builder.addCase(logout, () => initialState);
+  }
 });
 
 export const { setLoading, setLeaderboard } = leaderboardSlice.actions;

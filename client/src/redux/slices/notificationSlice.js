@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { logout } from "../actions/authActions";
 
 const initialState = {
   notifications: [],
@@ -33,6 +34,10 @@ const notificationSlice = createSlice({
       });
     },
   },
+
+  extraReducers: (builder) => {
+    builder.addCase(logout, () => initialState);
+  },
 });
 
 export const {
@@ -40,6 +45,7 @@ export const {
   setNotifications,
   addNotification,
   markAllAsRead,
+  clearNotifications,
 } = notificationSlice.actions;
 
 export default notificationSlice.reducer;

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { loginSuccess, logout } from "../../redux/slices/authSlice";
 import { motion } from "framer-motion";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";

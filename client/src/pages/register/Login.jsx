@@ -18,20 +18,15 @@ import {
   Facebook as FacebookIcon,
 } from "@mui/icons-material";
 import { Link, useNavigate } from "react-router-dom";
-import {connectSocket} from "../../socket/socket"
 import { loginUser } from "../../apis/authApi";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { loginSuccess } from "../../redux/slices/authSlice"; 
 import Lottie from "lottie-react";
 import backgroundAnimation from "../../assets/animations/background-animation.json";
 import { Typewriter } from "react-simple-typewriter";
-import { getMe } from "../../apis/userApi";
-
-
 
 const LoginPage = () => {
   const [input, setInput] = useState({ email: "", password: "" });
-  const [role, setRole] = useState("");
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
@@ -39,29 +34,17 @@ const LoginPage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  const fetchUser = async () => {
-    const data = await getMe();
-    const user = data?.data?.data;
-    if (!user) {
-      return;
-    }
-
-    setRole(user.role);
-
-    dispatch(
-      loginSuccess(user)
-    );
-
-    if (user.role === "admin") {
-      navigate("/admin-dashboard");
-    } else {
-      navigate("/dashboard");
-    }
-  };
+  const user = useSelector((state) => state.auth.user);
 
   useEffect(() => {
-    fetchUser();
-  }, []);
+    if (!user) return;
+
+    if (user.role === "admin") {
+      navigate("/admin-dashboard", { replace: true });
+    } else {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleChange = (e) => {
     setInput({ ...input, [e.target.name]: e.target.value });
@@ -77,27 +60,20 @@ const LoginPage = () => {
         password: input.password,
       });
 
-      const user = res.data.user;
+      const user = res?.data?.user;
 
       dispatch(
         loginSuccess(user)
       );
 
-      connectSocket();
-
-      if (user.role === "admin") {
-        navigate("/admin-dashboard");
-      } else {
-        navigate("/dashboard");
-      }
     } catch (error) {
       setError(error.response?.data?.message || "Invalid credentials. Try again.");
     }
   };
 
-    const handleGoogleLogin = () => {
-      window.location.href = `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/google`;
-    };
+  const handleGoogleLogin = () => {
+    window.location.href = `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/google`;
+  };
 
   return (
     <Box

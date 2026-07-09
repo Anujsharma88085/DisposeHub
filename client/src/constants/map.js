@@ -1,0 +1,1 @@
+export const MAP_INITIAL_ZOOM = 14;

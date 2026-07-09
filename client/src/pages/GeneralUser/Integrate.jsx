@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDispatch } from "react-redux";
-import { logout } from "../../redux/slices/authSlice";
+import { logout } from "../../redux/actions/authActions";
 import { useNavigate } from 'react-router-dom';
 import LeafletMap from '../../components/LeafletMap';
 import { logoutUser } from '../../apis/authApi';
@@ -13,6 +13,7 @@ import {
   Divider,
 } from '@mui/material';
 import { styled } from '@mui/system';
+import { showErrorToast } from '../../utils/showErrorToast';
 
 /* =======================
    Sidebar
@@ -82,7 +83,7 @@ const MapContainer = styled(Paper)(({ theme }) => ({
 /* =======================
    Main Component
 ======================= */
-function Integrate({ garbageDumps }) {
+function Integrate() {
   const navigate = useNavigate();
 
   const dispatch = useDispatch();
@@ -95,10 +96,7 @@ function Integrate({ garbageDumps }) {
 
       navigate("/login");
     } catch (error) {
-      console.error("Logout failed:", error);
-
-      dispatch(logout());
-      navigate("/login");
+      showErrorToast(error);
     }
   };
 
@@ -137,9 +135,7 @@ function Integrate({ garbageDumps }) {
 
       {/* ===== MAP ===== */}
       <MapContainer elevation={4}>
-        <LeafletMap
-          garbageDumps={garbageDumps}
-        />
+        <LeafletMap/>
       </MapContainer>
     </Box>
   );

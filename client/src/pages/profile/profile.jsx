@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { FaEdit } from "react-icons/fa";
 import { Card, CardContent, Typography, Box } from "@mui/material";
-import { useSpring, animated, config } from "react-spring";
 import styled, { keyframes } from "styled-components";
 import defaultProfile from "../../assets/images/default-profile.png";
+import coin1 from "../../assets/images/coin1.png";
+import coin2 from "../../assets/images/coin2.png";
 
 const fall = keyframes`
   0% {
@@ -18,57 +18,16 @@ const fall = keyframes`
   }
 `;
 
-const grow = keyframes`
-  0% {
-    transform: scale(0.5);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1);
-  }
-`;
-
-const pulse = keyframes`
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-  100% {
-    transform: scale(1);
-  }
-`;
-
-// Styled components for animations
-const FallingCoin = styled(animated.div)`
+const FallingCoin = styled.div`
   position: absolute;
-  animation: ${fall} ${props => props.duration || '3s'} linear infinite;
-  animation-delay: ${props => props.delay || '0s'};
-  left: ${props => props.left || '50%'};
+  animation: ${fall} ${(props) => props.$duration || "3s"} linear infinite;
+  animation-delay: ${(props) => props.$delay || "0s"};
+  left: ${(props) => props.$left || "50%"};
   z-index: 1;
 `;
 
-const GrowingTreeContainer = styled.div`
-  position: relative;
-  width: 80px;
-  height: 80px;
-  margin: 0 auto;
-`;
-
-const Tree = styled.div`
-  width: 100%;
-  height: 100%;
-  background-image: url('https://cdn-icons-png.flaticon.com/512/477/477033.png');
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  animation: ${grow} 1.5s ease-out forwards, ${pulse} 3s ease-in-out infinite;
-`;
+const COIN_IMAGES = [coin1, coin2];
+const TOTAL_COINS = 8;
 
 export default function UserProfile() {
   
@@ -94,22 +53,17 @@ export default function UserProfile() {
 
   const generateCoins = () => {
     const coins = [];
-    const coinImages = [
-      'https://cdn-icons-png.flaticon.com/512/272/272525.png',
-      'https://cdn-icons-png.flaticon.com/512/3132/3132693.png',
-      'https://cdn-icons-png.flaticon.com/512/477/477029.png'
-    ];
     
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < TOTAL_COINS; i++) {
       coins.push(
         <FallingCoin
           key={i}
-          delay={`${Math.random() * 2}s`}
-          duration={`${2 + Math.random() * 3}s`}
-          left={`${10 + Math.random() * 80}%`}
+          $delay={`${Math.random() * 2}s`}
+          $duration={`${2 + Math.random() * 3}s`}
+          $left={`${10 + Math.random() * 80}%`}
         >
           <img
-            src={coinImages[Math.floor(Math.random() * coinImages.length)]}
+            src={COIN_IMAGES[Math.floor(Math.random() * COIN_IMAGES.length)]}
             alt="Coin"
             style={{ width: "20px", height: "20px" }}
           />
@@ -118,23 +72,6 @@ export default function UserProfile() {
     }
     return coins;
   };
-
-  const GrowingTree = () => {
-    const points = user?.points || 0;
-    let treeSize = '60px';
-    
-    if (points > 1000) treeSize = '100px';
-    else if (points > 500) treeSize = '90px';
-    else if (points > 200) treeSize = '80px';
-    else if (points > 50) treeSize = '70px';
-
-    return (
-      <GrowingTreeContainer>
-        <Tree style={{ width: treeSize, height: treeSize }} />
-      </GrowingTreeContainer>
-    );
-  };
-
 
   return (
     <div

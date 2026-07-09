@@ -5,6 +5,8 @@ import {uploadProfilePicture, updateUserProfile,  updatePassword, } from "../../
 import { updateUser } from "../../redux/slices/authSlice";
 import defaultProfile from "../../assets/images/default-profile.png";
 import { useSelector, useDispatch } from "react-redux";
+import { toast } from "react-toastify";
+import { showErrorToast } from "../../utils/showErrorToast";
 
 export default function EditUserProfile() {
   const navigate = useNavigate();
@@ -70,7 +72,7 @@ export default function EditUserProfile() {
     const { passwordCurrent, password, passwordConfirm } = passwordData;
 
     if (!passwordCurrent || !password || !passwordConfirm) {
-      alert("Please fill all password fields.");
+      toast.warning("Please fill all password fields.");
       return;
     }
 
@@ -79,12 +81,12 @@ export default function EditUserProfile() {
       password.length < 5 ||
       passwordConfirm.length < 5
     ) {
-      alert("Password must be at least 5 characters long.");
+      toast.warning("Password must be at least 5 characters long.");
       return;
     }
 
     if (password !== passwordConfirm) {
-      alert("New password and confirm password do not match.");
+      toast.warning("New password and confirm password do not match.");
       return;
     }
 
@@ -99,10 +101,12 @@ export default function EditUserProfile() {
         passwordConfirm: "",
       });
 
-      alert("Password updated successfully.");
+      toast.success("Password updated successfully.");
     } catch (error) {
-      if(error.status === 401){
-        alert('your current password is wrong');
+      if(error.status === 400){
+        toast.error("Current password is incorrect.");
+      } else {
+        showErrorToast(error);
       }
     } finally {
       setPasswordLoading(false);
@@ -117,7 +121,7 @@ export default function EditUserProfile() {
 
     try {
       setUploading(true);
-      const data = await uploadProfilePicture(file);
+      const { data } = await uploadProfilePicture(file);
 
       dispatch(
         updateUser({
@@ -125,8 +129,9 @@ export default function EditUserProfile() {
           profilePicture: data.profilePicture,
         })
       );
+      toast.success("ProfilePhoto uploaded successfully.");
     } catch (error) {
-      console.error("Upload error:", error.message);
+      showErrorToast(error);
     } finally {
       e.target.value = "";
       setUploading(false);
@@ -138,9 +143,9 @@ export default function EditUserProfile() {
     try {
       const updatedData = await updateUserProfile(editedUser);
       dispatch(updateUser(updatedData.user));
-      alert("profile updated successfully");
+      toast.success("Profile updated successfully.");
     } catch (error) {
-      console.log("Error:", error.message);
+      showErrorToast(error);
     } finally {
       setLoading(false);
     }
