@@ -390,7 +390,6 @@ const LeafletMap = () => {
         zoom={MAP_INITIAL_ZOOM}
         style={{ height: '100%', width: '100%' }}
         ref={mapRef}
-        scrollWheelZoom={false}
       >
         <MapClickHandler onClick={handleMapClick} />
         <CurrentLocationButton myLocation={myLocation} />

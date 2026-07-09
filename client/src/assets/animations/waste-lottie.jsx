@@ -1,12 +1,15 @@
 import React from 'react';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import { animationPath } from "./animationConstants";
 
-const App = () => {
+const WasteLottie = () => {
   return (
     <DotLottieReact
-      src="path/to/animation.lottie"
+      src={animationPath}
       loop
       autoplay
     />
   );
 };
+
+export default WasteLottie;

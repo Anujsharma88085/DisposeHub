@@ -4,6 +4,7 @@ import Button from '@mui/material/Button';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { deleteContactMessage, getAllContactMessages } from '../apis/contactApi';
 import { CircularProgress } from '@mui/material';
+import { showErrorToast } from '../utils/showErrorToast';
 
 export default function ContactMessages() {
   const [messages, setMessages] = useState([]);
@@ -16,7 +17,11 @@ export default function ContactMessages() {
       const list = Array.isArray(raw) ? raw : raw.messages;
       setMessages(Array.isArray(list) ? list : []);
     } catch (err) {
-      console.error("Error fetching messages", err);
+      showErrorToast(err);
+      
+      if(import.meta.env.DEV){
+        console.error("Error fetching messages", err);
+      }
     }finally{
       setLoading(false);
     }
@@ -27,7 +32,11 @@ export default function ContactMessages() {
       await deleteContactMessage(id)
       setMessages((prev) => prev.filter((msg) => msg._id !== id));
     } catch (err) {
-      console.error("Error deleting message", err);
+      showErrorToast(err);
+
+      if (import.meta.env.DEV) {
+        console.error("Error deleting message", err);
+      }
     }
   };
 

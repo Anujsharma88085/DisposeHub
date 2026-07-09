@@ -8,6 +8,7 @@ import { getSocket } from "../socket/socket";
 import { setLoading, setNotifications, addNotification, } from "../redux/slices/notificationSlice";
 import { EVENTS } from "../socket/events";
 import { updateUser } from "../redux/slices/authSlice";
+import { showErrorToast } from "../utils/showErrorToast";
 
 
 export default function AppLayout() {
@@ -27,8 +28,12 @@ export default function AppLayout() {
           })
         );
       } catch (error) {
-        console.error("Failed to fetch notifications:", error);
+        showErrorToast(error);
 
+        if (import.meta.env.DEV) {
+          console.error("Failed to fetch notifications:", error);
+        }
+      } finally {
         dispatch(setLoading(false));
       }
     };

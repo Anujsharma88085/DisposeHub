@@ -1,8 +1,9 @@
 import { useDispatch, useSelector } from "react-redux";
-import { Player } from "@lottiefiles/react-lottie-player";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import loadingAnimation from "../assets/loading.json";
 import { markNotificationsAsRead } from "../apis/notificationApi";
 import { markAllAsRead } from "../redux/slices/notificationSlice";
+import { showErrorToast } from "../utils/showErrorToast";
 
 
 
@@ -20,7 +21,11 @@ const NotificationDropdown = () => {
       await markNotificationsAsRead();
       dispatch(markAllAsRead());
     } catch (error) {
-      console.error(error);
+      showErrorToast(error);
+
+      if (import.meta.env.DEV) {
+        console.error(error);
+      }
     }
   };
 
@@ -38,7 +43,7 @@ const NotificationDropdown = () => {
 
       {loading ? (
         <div className="flex justify-center items-center py-6">
-          <Player src={loadingAnimation} className="w-16 h-16" autoplay loop />
+          <DotLottieReact src={loadingAnimation} className="w-16 h-16" autoplay loop />
         </div>
       ) : notifications.length === 0 ? (
       <p className="text-gray-400 text-center py-4">

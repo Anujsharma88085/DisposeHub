@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { motion } from "framer-motion";
 import { fetchAllTransactions } from '../apis/transactionAPI';
 import { CircularProgress } from '@mui/material';
+import { showErrorToast } from '../utils/showErrorToast';
 
 export default function AdminTransactions() {
   const [transactions, setTransactions] = useState([]);
@@ -12,7 +14,11 @@ export default function AdminTransactions() {
       const res = await fetchAllTransactions();
       setTransactions(res.data.transactions);
     } catch (err) {
-      console.error("Error fetching transactions", err);
+      showErrorToast(err);
+
+      if (import.meta.env.DEV) {
+        console.error("Error fetching transactions", err);
+      }
     }finally{
       setLoading(false);
     }

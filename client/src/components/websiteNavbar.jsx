@@ -48,7 +48,9 @@ const Navbar = () => {
 
       navigate("/login");
     } catch (error) {
-      console.error("Logout failed:", error);
+      if (import.meta.env.DEV) {
+        console.error("Logout failed:", error);
+      }
 
       dispatch(logout());
       navigate("/login");
@@ -56,7 +58,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-gray-900 text-white px-8 py-4 shadow-md flex justify-between items-center">
+    <nav className="sticky top-0 z-[9999] bg-gray-900 text-white px-8 py-4 shadow-md flex justify-between items-center">
       <div className="text-2xl font-bold tracking-wide">
         <Link to="/">DisposeHub</Link>
       </div>

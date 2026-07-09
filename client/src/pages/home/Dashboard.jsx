@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { motion } from "framer-motion";
 import Button from "@mui/material/Button";
@@ -16,7 +16,7 @@ export default function UserDashboard() {
     if (!user) {
       navigate("/login");
     }
-  }, [user]);
+  }, [user, navigate]);
 
   const renderUserSections = () => (
     <div className="min-h-screen flex flex-col items-center py-12 px-6">
@@ -45,7 +45,7 @@ export default function UserDashboard() {
             {user.role}
           </p>
           <p className="text-xs text-white mt-4 text-center">
-            This is your public profile info. Make sure it's up to date so
+            This is your public profile info. Make sure it&apos;s up to date so
             others can recognize your role.
           </p>
         </motion.div>
@@ -385,7 +385,7 @@ export default function UserDashboard() {
         className="text-center mb-1"
       >
         <h1 className="text-5xl font-extrabold text-white drop-shadow-xl tracking-tight">
-          Welcome to DesposeHub
+          Welcome to DisposeHub
         </h1>
         <p className="text-lg mt-4 max-w-2xl mx-auto text-gray-200 font-medium leading-relaxed">
           Empower your surroundings by responsibly disposing waste and earning

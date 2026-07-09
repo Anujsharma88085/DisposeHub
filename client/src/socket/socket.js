@@ -1,21 +1,26 @@
 import { io } from "socket.io-client";
+import { showErrorToast } from "../utils/showErrorToast";
 
 let socket = null;
 
 export const connectSocket = () => {
   if (!socket) {
-    socket = io("http://localhost:3000", {
+    socket = io(import.meta.env.VITE_SOCKET_URL, {
       withCredentials: true,
       transports: ["websocket"],
       reconnection: true,
     });
 
     socket.on("connect", () => {
-      console.log("✅ Socket connected:", socket.id);
+      if (import.meta.env.DEV) {
+        console.log("✅ Socket connected:", socket.id);
+      }
     });
 
     socket.on("connect_error", (err) => {
-      console.error("❌ Socket error:", err.message);
+      if (import.meta.env.DEV) {
+        console.error("❌ Socket error:", err);
+      }
     });
   }
 

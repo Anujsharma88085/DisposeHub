@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { deactivateLocation } from '../apis/garbageApi';
@@ -6,6 +6,7 @@ import { useSelector } from 'react-redux';
 import { emitLocationUpdate } from '../socket/emitters';
 import { getSocket } from "../socket/socket";
 import { registerDriverListeners } from "../socket/listeners";
+import { showErrorToast } from '../utils/showErrorToast';
 
 // Custom red marker (driver)
 const redIcon = new L.Icon({
@@ -88,7 +89,7 @@ const DriverLeafletMap = ({ pickupLocations, setPickupLocations, garbageDumps })
     });
 
     return cleanup;
-  }, [socket]);
+  }, [socket, setPickupLocations]);
 
   // Create map once
   useEffect(() => {
@@ -127,7 +128,7 @@ const DriverLeafletMap = ({ pickupLocations, setPickupLocations, garbageDumps })
             emitLocationUpdate({lat, lng});
           },
           (error) => {
-            if (!hasLoggedError.current) {
+            if (!hasLoggedError.current && import.meta.env.DEV) {
               console.error("Geolocation error:", error.message);
               hasLoggedError.current = true;
             }
@@ -198,7 +199,7 @@ const DriverLeafletMap = ({ pickupLocations, setPickupLocations, garbageDumps })
   }, [myLocation]);
 
   // Clear all route elements
-  const clearRouteElements = () => {
+  const clearRouteElements = useCallback(() => {
     if (polylineRef.current && mapRef.current) {
       mapRef.current.removeLayer(polylineRef.current);
       polylineRef.current = null;
@@ -218,31 +219,57 @@ const DriverLeafletMap = ({ pickupLocations, setPickupLocations, garbageDumps })
       mapRef.current.removeLayer(endMarkerRef.current);
       endMarkerRef.current = null;
     }
-  };
+  }, []);
 
-  const clearRoute = () => {
+  const clearRoute = useCallback(() => {
     clearRouteElements();
-  };
+  }, [clearRouteElements]);
 
   useEffect(() => {
     clearRouteElements();
-  }, [pickupLocations]);
+  }, [pickupLocations, clearRouteElements]);
 
-  const completePickup = async (pickupId, pickupLocation) => {
-    if (window.confirm(`Mark this pickup as completed?\n\nLocation: ${pickupLocation?.name || pickupLocation?.locationName || 'Pickup Location'}`)) {
-      
-      const response = await deactivateLocation(pickupId);
+  const completePickup = useCallback(async (pickupId, pickupLocation) => {
+    if (
+      window.confirm(
+        `Mark this pickup as completed?\n\nLocation: ${
+          pickupLocation?.name ||
+          pickupLocation?.locationName ||
+          "Pickup Location"
+        }`
+      )
+    ) {
+      try {
+        const response = await deactivateLocation(pickupId);
 
-      if (!response.success) {
-        console.error("Failed");
-        return;
-      } 
+        if (!response.success) {
+          showErrorToast({
+            response: {
+              data: {
+                message: "Failed to complete pickup.",
+              },
+            },
+          });
 
-      clearRouteElements();
+          if (import.meta.env.DEV) {
+            console.error("Failed to complete pickup");
+          }
+
+          return;
+        }
+
+        clearRouteElements();
+      } catch (error) {
+        showErrorToast(error);
+
+        if (import.meta.env.DEV) {
+          console.error(error);
+        }
+      }
     }
-  };
+  }, [clearRouteElements]);
 
-  const calculateRoute = async (startLat, startLng, endLat, endLng, pickupLocation = null) => {
+  const calculateRoute = useCallback(async (startLat, startLng, endLat, endLng, pickupLocation = null) => {
     if (!mapRef.current) return;
     
     setLoadingRoute(true);
@@ -389,7 +416,9 @@ const DriverLeafletMap = ({ pickupLocations, setPickupLocations, garbageDumps })
         throw new Error('No route found');
       }
     } catch (error) {
-      console.error('Error calculating route:', error);
+      if(import.meta.env.DEV){
+        console.error('Error calculating route:', error);
+      }
       const coordinates = [[startLat, startLng], [endLat, endLng]];
       polylineRef.current = L.polyline(coordinates, {
         color: '#dc2626',
@@ -458,7 +487,7 @@ const DriverLeafletMap = ({ pickupLocations, setPickupLocations, garbageDumps })
     } finally {
       setLoadingRoute(false);
     }
-  };
+  }, [clearRouteElements, completePickup]);
 
   // Static garbage dumps from database (blue markers)
   useEffect(() => {
@@ -479,9 +508,11 @@ const DriverLeafletMap = ({ pickupLocations, setPickupLocations, garbageDumps })
       const lat = dump.lat || dump.latitude;
       const lng = dump.long || dump.lng || dump.longitude;
       
-      if (!lat || !lng) {
-        console.warn('⚠️ Garbage dump missing coordinates:', dump);
-        return;
+      if(import.meta.env.DEV){
+        if (!lat || !lng) {
+          console.warn('⚠️ Garbage dump missing coordinates:', dump);
+          return;
+        }
       }
 
       const marker = L.marker([parseFloat(lat), parseFloat(lng)], { 
@@ -504,11 +535,7 @@ const DriverLeafletMap = ({ pickupLocations, setPickupLocations, garbageDumps })
       garbageMarkersRef.current.push(marker);
     });
     
-  }, [garbageDumps, myLocation]);
-
-  const uniquePickupLocations = Array.from(
-    new Map(pickupLocations.map((l) => [l.id, l])).values()
-  );
+  }, [garbageDumps, myLocation, calculateRoute]);
 
   useEffect(() => {
     if (!mapRef.current) {
@@ -526,9 +553,11 @@ const DriverLeafletMap = ({ pickupLocations, setPickupLocations, garbageDumps })
       const lat = loc.lat;
       const lng = loc.long || loc.lng;
       
-      if (!lat || !lng) {
-        console.warn('⚠️ Active pickup missing coordinates:', loc);
-        return;
+      if(import.meta.env.DEV){
+        if (!lat || !lng) {
+          console.warn('⚠️ Active pickup missing coordinates:', loc);
+          return;
+        }
       }
 
       const marker = L.marker([parseFloat(lat), parseFloat(lng)], { 
@@ -556,7 +585,7 @@ const DriverLeafletMap = ({ pickupLocations, setPickupLocations, garbageDumps })
       userMarkersRef.current.push(marker);
     });
     
-  }, [myLocation, pickupLocations]);
+  }, [myLocation, pickupLocations, calculateRoute]);
 
   // Cleanup on component unmount
   useEffect(() => {
@@ -576,7 +605,7 @@ const DriverLeafletMap = ({ pickupLocations, setPickupLocations, garbageDumps })
         }
       });
     };
-  }, []);
+  }, [clearRouteElements]);
 
   return (
     <div className="p-4 h-full flex flex-col">
@@ -607,7 +636,7 @@ const DriverLeafletMap = ({ pickupLocations, setPickupLocations, garbageDumps })
       
       <div className="mb-4 grid grid-cols-2 gap-3">
         <div className="bg-blue-50 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-blue-600">{uniquePickupLocations.length}</div>
+          <div className="text-2xl font-bold text-blue-600">{ pickupLocations.length }</div>
           <div className="text-xs text-gray-600">Active Pickups</div>
         </div>
         <div className="bg-green-50 rounded-lg p-3 text-center">
@@ -634,7 +663,7 @@ const DriverLeafletMap = ({ pickupLocations, setPickupLocations, garbageDumps })
           </div>
           <div className="flex items-center">
             <div className="w-4 h-4 bg-yellow-500 rounded-full mr-2"></div>
-            <span>User Pickup Requests ({uniquePickupLocations.length})</span>
+            <span>User Pickup Requests ({ pickupLocations.length })</span>
           </div>
           <div className="flex items-center">
             <div className="w-4 h-4 bg-blue-300 rounded-full mr-2"></div>
@@ -651,9 +680,9 @@ const DriverLeafletMap = ({ pickupLocations, setPickupLocations, garbageDumps })
         <div className="mt-3 p-3 bg-gray-50 rounded-lg">
           <div className="text-xs text-gray-600 space-y-1">
             <p>💡 <strong>How to use:</strong></p>
-            <p>• Click on any <span className="text-yellow-600 font-semibold">yellow marker</span> to see route to user's pickup location</p>
+            <p>• Click on any <span className="text-yellow-600 font-semibold">yellow marker</span> to see route to user&apos;s pickup location</p>
             <p>• Click on any <span className="text-blue-600 font-semibold">blue marker</span> to see route to garbage dump</p>
-            <p>• After collecting garbage, click "Complete Pickup" to remove it from map</p>
+            <p>• After collecting garbage, click &ldquo;Complete Pickup&rdquo; to remove it from map</p>
             <p>• New pickup requests appear automatically - no refresh needed!</p>
             {pickupLocations.length > 0 && (
               <p className="text-green-600 mt-1">✨ {pickupLocations.length} active pickup request(s) waiting!</p>

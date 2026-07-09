@@ -18,7 +18,6 @@ export const sendContactMessage = catchAsync(async (req, res, next) => {
   const existing = await Contact.findOne({ user: userId });
 
   if (existing) {
-    console.log("comes here");
     const diff = now - existing.lastSentAt;
 
     if (diff < cooldownMs) {

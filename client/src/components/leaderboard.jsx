@@ -23,6 +23,7 @@ import {
   setLoading,
 } from "../redux/slices/leaderboardSlice";
 import { EVENTS } from '../socket/events';
+import { showErrorToast } from '../utils/showErrorToast';
 
 const Leaderboard = () => {
   const [selectedRole, setSelectedRole] = useState("user");
@@ -41,7 +42,11 @@ const Leaderboard = () => {
 
         dispatch(setLeaderboard(data.leaderboard));
       } catch (error) {
-        console.error("Failed to fetch leaderboard:", error);
+        showErrorToast(error);
+
+        if (import.meta.env.DEV) {
+          console.error("Failed to fetch leaderboard:", error);
+        }
       } finally {
         dispatch(setLoading(false));
       }
@@ -56,17 +61,16 @@ const Leaderboard = () => {
     if (!socket) return;
 
     const handleLeaderboardUpdate = async () => {
-        try {
-            dispatch(setLoading(true));
+      try {
+          const data = await getLeaderboard(selectedRole);
 
-            const data = await getLeaderboard(selectedRole);
+          dispatch(setLeaderboard(data.leaderboard));
+      } catch (error) {
 
-            dispatch(setLeaderboard(data.leaderboard));
-        } catch (error) {
-            console.error(error);
-        } finally {
-            dispatch(setLoading(false));
+        if (import.meta.env.DEV) {
+          console.error(error);
         }
+      }
     };
 
     socket.on(EVENTS.LEADERBOARD_UPDATE, handleLeaderboardUpdate);

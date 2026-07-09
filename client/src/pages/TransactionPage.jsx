@@ -3,6 +3,7 @@ import { fetchUserTransactions } from '../apis/transactionAPI';
 import TransactionList from '../components/Transaction/TransactionList';
 import Rupee from "../assets/transactionPage-bg.jpeg";
 import { useNavigate } from "react-router-dom";
+import { showErrorToast } from '../utils/showErrorToast';
 
 const TransactionsPage = () => {
   const [transactions, setTransactions] = useState([]);
@@ -15,9 +16,9 @@ const TransactionsPage = () => {
         const data = await fetchUserTransactions();
         setTransactions(data?.data?.transactions);
       } catch (err) {
-        if (err.response?.status === 401) {
-          navigate("/login");
-        } else {
+        showErrorToast(err);
+
+        if (import.meta.env.DEV) {
           console.error("Error fetching transactions", err);
         }
       }finally {

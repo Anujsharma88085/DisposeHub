@@ -19,7 +19,10 @@ const initializeSocket = (io) => {
   setupSocketAuth(io);
 
   io.on(EVENTS.CONNECT, (socket) => {
-    console.log(`✅ Socket Connected: ${socket.id}`);
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`Socket Connected: ${socket.id}`);
+    }
+
 
     addSocket({
       userId: socket.user.id,
@@ -30,8 +33,9 @@ const initializeSocket = (io) => {
     registerHandlers(io, socket);
 
     socket.on(EVENTS.DISCONNECT, () => {
-      console.log(`❌ Socket Disconnected: ${socket.id}`);
-
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`Socket Disconnected: ${socket.id}`);
+      }
       removeSocket(socket.user.id);
       removeLocation(socket.user.id);
     });

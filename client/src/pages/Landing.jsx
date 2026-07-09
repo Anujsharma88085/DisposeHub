@@ -1,11 +1,6 @@
 import { motion } from "framer-motion";
 import { FaRecycle, FaBell,FaLaptop, FaCamera, FaTruck ,FaMapMarkerAlt } from "react-icons/fa";
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
-import pickupImage from '../assets/garbage1.jpg';
-import locationImage from '../assets/garbage2.jpg';
-import instantResultsImage from '../assets/garbage4.jpg';
-import recyclingInfoImage from '../assets/education.jpg';
-import garbageCollectionImage from '../assets/garbage_van.jpg';
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 
@@ -110,7 +105,7 @@ export default function LandingPage() {
             icon={<FaBell size={50} className="text-yellow-400 mb-4" />}
             title="Notify Garbage"
             desc="Users can easily notify authorities about garbage that needs pickup with just one tap."
-            image={instantResultsImage}
+            image="/images/notifyGarbage.webp"
             className="bg-gradient-to-tr from-purple-900 via-purple-800 to-black text-white hover:shadow-2xl transition duration-300 ease-in-out p-6 rounded-2xl border border-yellow-500"
             />
 
@@ -118,7 +113,7 @@ export default function LandingPage() {
             icon={<FaMapMarkerAlt size={50} className="text-green-400 mb-4" />}
             title="Location-Based Collection"
             desc="Garbage collectors get real-time tasks based on reported locations nearby."
-            image={locationImage}
+            image="/images/location.webp"
             className="bg-gradient-to-tr from-purple-900 via-purple-800 to-black text-white hover:shadow-2xl transition duration-300 ease-in-out p-6 rounded-2xl border border-green-500"
             />
 
@@ -126,7 +121,7 @@ export default function LandingPage() {
             icon={<FaTruck size={50} className="text-blue-400 mb-4" />}
             title="Efficient Pickup"
             desc="Collectors confirm, pass, or mark garbage as picked directly from the dashboard."
-            image={pickupImage}
+            image="/images/pickup.webp"
             className="bg-gradient-to-tr from-purple-900 via-purple-800 to-black text-white hover:shadow-2xl transition duration-300 ease-in-out p-6 rounded-2xl border border-blue-500"
             />
 
@@ -136,7 +131,7 @@ export default function LandingPage() {
         {/* Educational Section */}
         <motion.div whileHover={{ scale: 1.02 }} className="flex flex-col lg:flex-row items-center bg-opacity-20 p-8 rounded-3xl mb-16 shadow-2xl border-2 border-purple-500">
           <img
-            src={recyclingInfoImage}
+            src='/images/recyclingInfoImage.webp'
             alt="Recycling Info"
             className="w-full lg:w-1/2 h-72 object-cover rounded-xl shadow-lg mb-6 lg:mb-0 lg:mr-6"
           />
@@ -156,7 +151,7 @@ export default function LandingPage() {
 
         <div className="overflow-hidden rounded-2xl shadow-lg transition-transform duration-300 group-hover:scale-105">
             <img
-            src={garbageCollectionImage}
+            src="/images/garbageCollectionImage.webp"
             alt="Garbage Collector Van"
             className="object-cover w-full h-64 rounded-2xl"
             />
@@ -202,10 +197,10 @@ export default function LandingPage() {
         <div className="text-center mb-12">
           <h2 className="text-4xl font-semibold text-white mb-6">What Users Are Saying</h2>
           <p className="text-lg text-gray-200 mb-4 italic">
-            "I used to be confused about waste. This app is like having a personal eco-assistant!"
+            &ldquo;I used to be confused about waste. This app is like having a personal eco-assistant!&rdquo;
           </p>
           <p className="text-lg text-gray-200 mb-4 italic">
-            "From AI support to local rules, it's the perfect solution for responsible waste disposal."
+            &ldquo;From AI support to local rules, it&apos;s the perfect solution for responsible waste disposal.&rdquo;
           </p>
         </div>
 
@@ -236,7 +231,7 @@ export default function LandingPage() {
 const FeatureCard = ({ icon, title, desc, image, className }) => (
     <div className={`flex flex-col items-center text-center ${className}`}>
       <div className="w-24 h-24 rounded-full overflow-hidden shadow-lg mb-4 border-4 border-white">
-        <img src={image} alt={title} className="w-full h-full object-cover" />
+        <img src={image} alt={title} loading="lazy" className="w-full h-full object-cover" />
       </div>
       {icon}
       <h3 className="text-2xl font-semibold mb-2">{title}</h3>

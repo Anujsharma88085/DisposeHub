@@ -19,7 +19,6 @@ const adminController = {
             amount,
             type: 'reward',
           });
-          // console.log(`Transaction created for user ${user._id}`);
         }
       } catch (err) {
         console.error(`Error processing user ${user._id}:`, err);

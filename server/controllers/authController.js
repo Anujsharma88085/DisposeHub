@@ -31,7 +31,7 @@ const sendJwtCookie = (user, res) => {
         process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
     ),
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "none",
   };
 
   if (process.env.NODE_ENV === "production") {
@@ -102,9 +102,11 @@ export const signup = catchAsync(async (req, res, next) => {
   void (async () => {
     try {
       await new Email(newUser, dashboardURL, { logoUrl }).sendWelcome();
-      console.log("Welcome email sent");
+      if (process.env.NODE_ENV !== "production") {
+        console.log("Welcome email sent");
+      }
     } catch (err) {
-      console.error("WELCOME EMAIL FAILED 💥", err);
+      console.error("Welcome email failed:", err.message);
     }
   })();
 });
@@ -194,9 +196,6 @@ export const forgotPassword = catchAsync(async (req, res, next) => {
 
   new Email(user, resetURL, { logoUrl })
     .sendPasswordReset()
-    .catch(err => {
-      console.log("Email failed:", err);
-    });
 });
 
 export const resetPassword = catchAsync(async (req, res, next) => {

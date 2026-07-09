@@ -37,6 +37,8 @@ const ContactForm = () => {
         setCanSend(contactStatus.canSend);
         setRemainingMs(contactStatus.remainingMs || 0);
       } catch (error) {
+        showErrorToast(error);
+        
         if(import.meta.env.DEV){
           console.error("Failed to load contact data:", error);
         }
