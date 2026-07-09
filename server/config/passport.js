@@ -21,8 +21,13 @@ passport.use(
             email,
             provider: "google",
             googleId: profile.id,
+            profilePicture: profile.photos?.[0]?.value,
             role: "user",
           });
+        } else if (!user.googleId) {
+          user.googleId = profile.id;
+          user.provider = "google";
+          await user.save();
         }
 
         return done(null, user);

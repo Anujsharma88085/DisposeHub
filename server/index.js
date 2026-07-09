@@ -3,6 +3,7 @@ import cors from 'cors';
 import path from "path";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import compression from "compression";
 
 import rootDir from './utils/rootDir.js';
 import AppError from "./utils/appError.js";
@@ -56,6 +57,8 @@ app.use(
     credentials: true,
   })
 );
+
+app.use(compression());
 
 app.use("/api", limiter);
 
