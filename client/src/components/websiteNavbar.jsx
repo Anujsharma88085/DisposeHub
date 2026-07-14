@@ -4,18 +4,24 @@ import { useDispatch } from "react-redux";
 import { logout } from "../redux/actions/authActions";
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@mui/material';
-import { FaBell } from "react-icons/fa";
+import { FaBell, FaBars, FaTimes } from "react-icons/fa";
 import NotificationDropdown from "./Notification";
+
 import { logoutUser } from '../apis/authApi';
 
 
 const Navbar = () => {
   const navigate = useNavigate();
   const [isBellOpen, setIsBellOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const bellRef = useRef(null);
 
   const dispatch = useDispatch();
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen((prev) => !prev);
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -58,75 +64,168 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-[9999] bg-gray-900 text-white px-8 py-4 shadow-md flex justify-between items-center">
-      <div className="text-2xl font-bold tracking-wide">
-        <Link to="/">DisposeHub</Link>
-      </div>
-      <div className="space-x-4 flex">
+  <nav className="sticky top-0 z-[9999] bg-gray-900 text-white shadow-md">
+    <div className="max-w-7xl mx-auto px-4 py-4">
+      {/* Top Navbar */}
+      <div className="flex items-center justify-between">
+
+        {/* Logo */}
         <Link
-            to="/"
-            className="inline-block  bg-zinc-500 text-white font-medium px-10 py-2 rounded-lg shadow-md hover:from-purple-600 hover:to-fuchsia-700 transition-all duration-300"
+          to="/"
+          className="text-2xl font-bold tracking-wide"
         >
-            Home
-        </Link>
-        <Link
-            to={role === 'admin' ? "/admin-dashboard" : "/dashboard"}
-            className="inline-block bg-zinc-500 text-white font-medium px-5 py-2 rounded-lg shadow-md hover:from-purple-600 hover:to-fuchsia-700 transition-all duration-300"
-        >
-            Dashboard
+          DisposeHub
         </Link>
 
-        {role !== "admin" && (
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex items-center gap-4">
+
           <Link
-              to="/leaderboard"
-              className="inline-block bg-zinc-500 text-white font-medium px-5 py-2 rounded-lg shadow-md hover:bg-zinc-600 transition-all duration-300"
+            to="/"
+            className="bg-zinc-500 px-5 py-2 rounded-lg hover:bg-zinc-600 transition"
           >
-          🏆 Leaderboard
+            Home
           </Link>
-        )}
-      </div>
-        
-      <div className="flex items-center gap-6">
-        {/* Notification Bell */}
-        {role !== 'admin' && (
-          <div
-            ref={bellRef}
-            className="relative" 
+
+          <Link
+            to={role === "admin" ? "/admin-dashboard" : "/dashboard"}
+            className="bg-zinc-500 px-5 py-2 rounded-lg hover:bg-zinc-600 transition"
           >
-            <FaBell
-              className="cursor-pointer text-2xl text-red-400 hover:text-red-600 transition duration-200 hover:scale-110"
-              onClick={toggleNotificationBell}
-            />
+            Dashboard
+          </Link>
 
-            {unreadCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">
-                {unreadCount}
-              </span>
-            )}
+          {role !== "admin" && (
+            <Link
+              to="/leaderboard"
+              className="bg-zinc-500 px-5 py-2 rounded-lg hover:bg-zinc-600 transition"
+            >
+              🏆 Leaderboard
+            </Link>
+          )}
 
-            {isBellOpen && <NotificationDropdown />}
-          </div>
-        )}
+          {role !== "admin" && (
+            <div
+              ref={bellRef}
+              className="relative"
+            >
+              <FaBell
+                className="cursor-pointer text-2xl text-red-400 hover:text-red-600 transition hover:scale-110"
+                onClick={toggleNotificationBell}
+              />
 
-        <Button
-          variant="contained"
-          onClick={handleLogout}
-          sx={{
+              {unreadCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+                  {unreadCount}
+                </span>
+              )}
+
+              {isBellOpen && <NotificationDropdown />}
+            </div>
+          )}
+
+          <Button
+            variant="contained"
+            onClick={handleLogout}
+            sx={{
               textTransform: "none",
               borderRadius: "999px",
               bgcolor: "#e53935",
-              color: "#ffffff",
+              color: "#fff",
               fontWeight: "bold",
               "&:hover": {
-              bgcolor: "#d32f2f",
+                bgcolor: "#d32f2f",
               },
-          }}
+            }}
           >
-          Logout
-        </Button>
+            Logout
+          </Button>
+        </div>
+
+        {/* Mobile Hamburger */}
+        <button
+          onClick={toggleMobileMenu}
+          className="md:hidden text-2xl"
+        >
+          {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
+        </button>
       </div>
-    </nav>
-  );
+
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden mt-4 flex flex-col gap-3 border-t border-gray-700 pt-4">
+
+          <Link
+            to="/"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="bg-zinc-500 px-4 py-3 rounded-lg text-center hover:bg-zinc-600"
+          >
+            Home
+          </Link>
+
+          <Link
+            to={role === "admin" ? "/admin-dashboard" : "/dashboard"}
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="bg-zinc-500 px-4 py-3 rounded-lg text-center hover:bg-zinc-600"
+          >
+            Dashboard
+          </Link>
+
+          {role !== "admin" && (
+            <Link
+              to="/leaderboard"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="bg-zinc-500 px-4 py-3 rounded-lg text-center hover:bg-zinc-600"
+            >
+              🏆 Leaderboard
+            </Link>
+          )}
+
+          {role !== "admin" && (
+            <div ref={bellRef} className="relative">
+              <button
+                onClick={toggleNotificationBell}
+                className="w-full bg-zinc-500 px-4 py-3 rounded-lg hover:bg-zinc-600 transition flex items-center justify-center gap-3"
+              >
+                <FaBell className="text-red-400 text-xl" />
+
+                <span className="font-medium">Notifications</span>
+
+                {unreadCount > 0 && (
+                  <span className="bg-red-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {isBellOpen && <NotificationDropdown />}
+            </div>
+          )}
+
+          <Button
+            fullWidth
+            variant="contained"
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              handleLogout();
+            }}
+            sx={{
+              textTransform: "none",
+              borderRadius: "8px",
+              bgcolor: "#e53935",
+              "&:hover": {
+                bgcolor: "#d32f2f",
+              },
+            }}
+          >
+            Logout
+          </Button>
+
+        </div>
+      )}
+    </div>
+  </nav>
+);
+
 };
 
 export default Navbar;

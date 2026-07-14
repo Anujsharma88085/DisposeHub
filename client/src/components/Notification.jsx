@@ -30,7 +30,36 @@ const NotificationDropdown = () => {
   };
 
   return (
-    <div className="absolute z-50 right-0 mt-6 w-80 bg-gray-900/80 backdrop-blur-2xl border border-cyan-500 shadow-xl rounded-2xl p-4 bell-dropdown transition-all duration-300 ease-in-out hover:shadow-cyan-500/50">
+    <div
+      className="
+        absolute
+        z-50
+        mt-6
+
+        right-0
+        w-80
+
+        md:right-0
+        md:w-80
+
+        max-md:left-1/2
+        max-md:right-auto
+        max-md:-translate-x-1/2
+        max-md:w-[90vw]
+        max-md:max-w-sm
+
+        bg-gray-900/80
+        backdrop-blur-2xl
+        border
+        border-cyan-500
+        shadow-xl
+        rounded-2xl
+        p-4
+        transition-all
+        duration-300
+        hover:shadow-cyan-500/50
+      "
+    >
       <h3 className="text-lg font-semibold text-cyan-300 flex justify-between items-center mb-3">
         <span>Notifications</span>
 
@@ -50,7 +79,7 @@ const NotificationDropdown = () => {
         No notifications yet
       </p>
       ) : (
-        <div className="max-h-64 overflow-y-auto custom-scrollbar">
+        <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
           {notifications.map((notif) => (
             <div
               key={notif._id}
