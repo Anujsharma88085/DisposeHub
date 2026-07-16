@@ -67,18 +67,21 @@ const Navbar = () => {
   <nav className="sticky top-0 z-[9999] bg-gray-900 text-white shadow-md">
     <div className="max-w-7xl mx-auto px-4 py-4">
       {/* Top Navbar */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between md:grid md:grid-cols-3 md:items-center">
 
         {/* Logo */}
-        <Link
-          to="/"
-          className="text-2xl font-bold tracking-wide"
-        >
-          DisposeHub
-        </Link>
+        <div className="justify-self-start">
+          <Link
+            to="/"
+            className="text-2xl font-bold tracking-wide"
+          >
+            DisposeHub
+          </Link>
+        </div>
+        
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-4">
+        <div className="hidden md:flex justify-center items-center gap-4">
 
           <Link
             to="/"
@@ -97,11 +100,15 @@ const Navbar = () => {
           {role !== "admin" && (
             <Link
               to="/leaderboard"
-              className="bg-zinc-500 px-5 py-2 rounded-lg hover:bg-zinc-600 transition"
+              className="bg-zinc-500 px-5 py-2 rounded-lg hover:bg-zinc-600 transition flex items-center gap-2"
             >
-              🏆 Leaderboard
+              <span>🏆</span>
+              <span>Leaderboard</span>
             </Link>
           )}
+        </div>
+
+        <div className="hidden md:flex justify-self-end items-center gap-6">
 
           {role !== "admin" && (
             <div
@@ -142,12 +149,15 @@ const Navbar = () => {
         </div>
 
         {/* Mobile Hamburger */}
-        <button
-          onClick={toggleMobileMenu}
-          className="md:hidden text-2xl"
-        >
-          {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
-        </button>
+        <div className="md:hidden">
+          <button
+            onClick={toggleMobileMenu}
+            className="md:hidden text-2xl"
+          >
+            {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
+          </button>
+        </div>
+        
       </div>
 
       {/* Mobile Menu */}

@@ -189,16 +189,25 @@ const SignupPage = () => {
       <Paper
         elevation={10}
         sx={{
-          width: "500px",
-          padding: "2rem",
+          width: {
+            xs: "100%",
+            sm: "500px",
+          },
+          maxWidth: "500px",
+          p: 4,
+          ml: {
+            md: "10%",
+          },
+          mt: {
+            xs: 0,
+            md: "5%",
+          },
           background: "rgba(255, 255, 255, 0.1)",
           backdropFilter: "blur(10px)",
           borderRadius: "20px",
           boxShadow: "0px 4px 30px rgba(110, 30, 255, 0.5)",
           border: "1px solid rgba(255, 255, 255, 0.2)",
           textAlign: "center",
-          marginLeft: "10%",
-          marginTop: "5%",
         }}
       >
         <Typography
@@ -272,7 +281,17 @@ const SignupPage = () => {
             />
           )}
 
-          <Box sx={{ display: "flex", gap: "1rem", width: "100%" }}>
+          <Box 
+            sx={{
+              display: "flex",
+              flexDirection: {
+                xs: "column",
+                sm: "row",
+              },
+              gap: 2,
+              width: "100%",
+            }}
+          >
             <TextField
               label="Password"
               type={showPassword ? "text" : "password"}

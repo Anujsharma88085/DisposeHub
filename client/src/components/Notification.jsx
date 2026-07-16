@@ -79,7 +79,7 @@ const NotificationDropdown = () => {
         No notifications yet
       </p>
       ) : (
-        <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
+        <div className="max-h-[29vh] overflow-y-auto custom-scrollbar">
           {notifications.map((notif) => (
             <div
               key={notif._id}

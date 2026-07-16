@@ -79,13 +79,18 @@ const LoginPage = () => {
     <Box
       sx={{
         display: "flex",
-        height: "100vh",
         alignItems: "center",
-        justifyContent: "left",
+        justifyContent: {
+          xs: "center",
+          md: "flex-start",
+        },
+        height: "100vh",
         position: "relative",
         overflow: "hidden",
-        margin: 0,
-        padding: 0,
+        px: {
+          xs: 2,
+          md: 0,
+        },
       }}
     >
 
@@ -143,16 +148,25 @@ const LoginPage = () => {
       <Paper
         elevation={10}
         sx={{
-          width: "400px",
-          padding: "2rem",
-          background: "rgba(255, 255, 255, 0.1)",
+          width: {
+            xs: "100%",
+            sm: "400px",
+          },
+          maxWidth: "400px",
+          p: 4,
+          background: "rgba(255,255,255,0.1)",
           backdropFilter: "blur(10px)",
           borderRadius: "20px",
-          boxShadow: "0px 4px 30px rgba(110, 30, 255, 0.5)",
-          border: "1px solid rgba(255, 255, 255, 0.2)",
+          boxShadow: "0px 4px 30px rgba(110,30,255,0.5)",
+          border: "1px solid rgba(255,255,255,0.2)",
           textAlign: "center",
-          marginLeft: "10%",
-          marginTop: "5%",
+          ml: {
+            md: "10%",
+          },
+          mt: {
+            xs: 0,
+            md: "5%",
+          },
         }}
       >
         <Typography
@@ -210,6 +224,7 @@ const LoginPage = () => {
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                     onClick={() => setShowPassword(!showPassword)}
                     edge="end"
                   >
